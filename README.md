@@ -1,5 +1,9 @@
 # Staible
 
+[![CI](https://github.com/DTreg1/Staible/actions/workflows/ci.yml/badge.svg)](https://github.com/DTreg1/Staible/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)](#tests)
+
 **A stable of machines, and which local LLMs actually run in it.**
 
 **[Try it live](https://dtreg1.github.io/Staible/)** · no install, runs entirely in your browser
