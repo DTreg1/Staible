@@ -2,13 +2,15 @@
 
 **A stable of machines, and which local LLMs actually run in it.**
 
+**[Try it live](https://dtreg1.github.io/Staible/)** · no install, runs entirely in your browser
+
 Staible answers one question: *given this model and this machine, will it run, and
 will it be usable?* It is built for a heterogeneous fleet — Apple Silicon laptops, a
 discrete-GPU box, a couple of SBCs — where the generic "VRAM calculator" answer is
 wrong for most of the hardware.
 
 The tool is a single self-contained HTML file. No build step, no dependencies, no
-server. Open it and it works.
+server, no telemetry. Open it and it works.
 
 ![The fitment matrix](docs/screenshots/matrix.png)
 
@@ -91,7 +93,7 @@ affected calculation.
 ## Layout
 
 ```
-web/index.html               the tool — open it directly, no build
+index.html                   the tool — open it directly, no build
 scripts/probe-fleet.sh       SSH hardware inventory -> data/fleet.json
 scripts/measure-device.sh    Ollama measurement harness -> bandwidth, KV, prompt rate
 scripts/fetch-hf-catalog.py  Hugging Face GGUF specs -> data/hf-catalog.json
@@ -103,7 +105,7 @@ data/hf-catalog.json         fetched model catalog
 
 ```bash
 git clone https://github.com/DTreg1/Staible.git && cd Staible
-open web/index.html          # or xdg-open / just open the file in a browser
+open index.html              # or xdg-open / just open the file in a browser
 ```
 
 That's enough to try it — the page ships with an example fleet and a real model
