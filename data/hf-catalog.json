@@ -1,0 +1,96 @@
+[
+ {
+  "repo": "unsloth/Qwen3.5-9B-GGUF",
+  "params": 8.95,
+  "ctx": 262144,
+  "quant": "Q4_K_M",
+  "sizeGB": 5.68,
+  "quants": {
+   "Q4_0": 5.38,
+   "Q4_K_M": 5.68,
+   "Q4_K_S": 5.39,
+   "Q5_K_M": 6.58,
+   "Q8_0": 9.53
+  }
+ },
+ {
+  "repo": "unsloth/Qwen3.8-27B-GGUF",
+  "params": 27.32,
+  "ctx": 262144,
+  "quant": "Q4_K_M",
+  "sizeGB": 16.46,
+  "quants": {
+   "Q4_0": 17.43,
+   "Q4_K_M": 16.46,
+   "Q4_K_S": 15.36,
+   "Q5_K_M": 19.77,
+   "Q8_0": 29.05
+  }
+ },
+ {
+  "repo": "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+  "params": 30.53,
+  "ctx": 262144,
+  "quant": "Q4_K_M",
+  "sizeGB": 18.56,
+  "quants": {
+   "Q4_0": 17.38,
+   "Q4_K_M": 18.56,
+   "Q4_K_S": 17.46,
+   "Q5_K_M": 21.73,
+   "Q8_0": 32.48
+  }
+ },
+ {
+  "repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
+  "params": 34.66,
+  "ctx": 262144,
+  "quant": "Q4_K_M",
+  "sizeGB": 22.13,
+  "quants": {
+   "MXFP4": 21.71,
+   "Q4_K_M": 22.13,
+   "Q4_K_S": 20.89,
+   "Q5_K_M": 26.46,
+   "Q8_0": 36.9
+  }
+ },
+ {
+  "repo": "unsloth/Qwen3.6-27B-GGUF",
+  "params": 26.9,
+  "ctx": 262144,
+  "quant": "Q4_K_M",
+  "sizeGB": 16.82,
+  "quants": {
+   "Q4_0": 15.79,
+   "Q4_K_M": 16.82,
+   "Q4_K_S": 15.86,
+   "Q5_K_M": 19.51,
+   "Q8_0": 28.6
+  }
+ },
+ {
+  "repo": "ggml-org/gemma-4-E4B-it-GGUF",
+  "params": 7.52,
+  "ctx": 131072,
+  "quant": "Q4_0",
+  "sizeGB": 4.65,
+  "quants": {
+   "Q4_0": 4.65,
+   "Q8_0": 8.13
+  }
+ },
+ {
+  "repo": "LiquidAI/LFM2.5-2.6B-GGUF",
+  "params": 2.7,
+  "ctx": 131072,
+  "quant": "Q4_K_M",
+  "sizeGB": 1.67,
+  "quants": {
+   "Q4_K_M": 1.67,
+   "Q5_K_M": 1.94,
+   "Q6_K": 2.22,
+   "Q8_0": 2.87
+  }
+ }
+]

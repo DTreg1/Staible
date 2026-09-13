@@ -1,0 +1,21 @@
+[
+ {"id":"ultron","name":"ultron","kind":"unified","reachable":true,
+  "desc":"MacBook Air · Apple M3","ramGB":16,"vramGB":0,"cores":8,"wiredLimitMB":0,
+  "bwGB":83,"bwMeasured":true,"ppRate":149,"note":"measured 2026-09-13"},
+ {"id":"vision","name":"vision","kind":"unified","reachable":true,
+  "desc":"MacBook Air · Apple M4","ramGB":16,"vramGB":0,"cores":10,"wiredLimitMB":0,
+  "bwGB":100,"bwMeasured":false,"ppRate":180,"note":"M4 vendor figure derated"},
+ {"id":"optimus","name":"optimus","kind":"discrete","reachable":true,
+  "desc":"NVIDIA GeForce RTX 4090","ramGB":32,"vramGB":24,"cores":32,
+  "bwGB":800,"bwCpuGB":55,"bwMeasured":false,"ppRate":3000,
+  "note":"i9-13900K host; unreachable at last probe"},
+ {"id":"r2d2","name":"r2d2","kind":"cpu","reachable":true,
+  "desc":"AMD Ryzen Embedded R2514","ramGB":8,"vramGB":0,
+  "bwGB":25,"bwMeasured":false,"ppRate":25,"osReserveGB":2},
+ {"id":"jetson","name":"jetson","kind":"cpu","reachable":true,
+  "desc":"Jetson Nano · Tegra X1","ramGB":4,"vramGB":0,
+  "bwGB":20,"bwMeasured":false,"ppRate":12,"osReserveGB":1.5,
+  "tegra":"R32 (release), REVISION: 7.6"},
+ {"id":"sentinel","name":"sentinel","kind":"unknown","reachable":false},
+ {"id":"deadpool","name":"deadpool","kind":"unknown","reachable":false}
+]
