@@ -224,9 +224,15 @@ svg text{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums
         <option value="8">q8_0 — half the KV</option>
       </select>
     </div>
+    <div class="field">
+      <label class="lbl" for="filter">Filter models</label>
+      <input type="text" id="filter" placeholder="qwen, gemma, coder..." style="width:190px">
+    </div>
     <div style="flex:1"></div>
     <button id="addDev">+ Add device</button>
     <button id="addMod">+ Add model</button>
+    <button id="importCat">Import catalogue</button>
+    <input type="file" id="catFile" accept=".json,application/json" style="display:none">
     <button id="reset" class="ghost">Reset to defaults</button>
   </div>
 
@@ -315,7 +321,9 @@ svg text{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums
 
   <section>
     <div class="sechead">
-      <div><h2>Models</h2><p>Download size is the weights. Import specs from a Hugging Face GGUF repo, or enter them by hand.</p></div>
+      <div><h2>Models</h2><p>Download size is the weights. Import one repo at a time, or load a whole
+      catalogue produced by <span class="mono">scripts/fetch-hf-catalog.py</span>.</p>
+      <p class="note" id="importNote" style="display:none;margin-top:9px"></p></div>
     </div>
     <div class="grid" id="mods"></div>
   </section>
@@ -410,17 +418,26 @@ const DEFAULT_DEVICES=[
 // for sliding-window architectures -- see the gemma4 entry, measured 13x lower.
 const estKv=P=>Math.round(40*Math.pow(P/8.95,.65));
 const DEFAULT_MODELS=[
- {id:"qwen35-9b",name:"qwen3.5:9b",repo:"unsloth/Qwen3.5-9B-GGUF",quant:"Q4_K_M",sizeGB:5.68,weightsGB:5.4,params:8.95,active:8.95,kvPer1kMB:40,kvMeasured:true,maxCtx:262144},
- {id:"gemma4-12b-qat",name:"gemma4:12b-it-qat",repo:"unsloth/gemma-4-12B-it-qat-GGUF",quant:"Q4_K",sizeGB:7.2,weightsGB:7.63,params:11.91,active:11.91,kvPer1kMB:3.1,kvMeasured:true,swa:true,maxCtx:262144},
- {id:"qwen38-27b",name:"qwen3.8:27b",repo:"unsloth/Qwen3.8-27B-GGUF",quant:"Q4_K_M",sizeGB:16.46,weightsGB:16.46,params:27.32,active:27.32,kvPer1kMB:estKv(27.32),kvMeasured:false,maxCtx:262144},
- {id:"qwen3coder-30b",name:"qwen3-coder:30b",repo:"unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",quant:"Q4_K_M",sizeGB:18.56,weightsGB:18.56,params:30.53,active:3.3,kvPer1kMB:105.6,kvMeasured:true,maxCtx:262144},
- {id:"qwen36-35b",name:"qwen3.6:35b-a3b",repo:"unsloth/Qwen3.6-35B-A3B-GGUF",quant:"Q4_K_M",sizeGB:22.13,weightsGB:22.13,params:34.66,active:3.3,kvPer1kMB:3.0,kvMeasured:true,swa:true,maxCtx:262144},
- {id:"qwen36-27b",name:"qwen3.6:27b",repo:"unsloth/Qwen3.6-27B-GGUF",quant:"Q4_K_M",sizeGB:16.82,weightsGB:16.82,params:26.90,active:26.90,kvPer1kMB:estKv(26.90),kvMeasured:false,maxCtx:262144},
- {id:"gemma4-e4b",name:"gemma4:e4b",repo:"ggml-org/gemma-4-E4B-it-GGUF",quant:"Q4_0",sizeGB:4.65,weightsGB:4.65,params:7.52,active:7.52,kvPer1kMB:3,kvMeasured:false,swa:true,maxCtx:131072},
- {id:"lfm25-26b",name:"lfm2.5:2.6b",repo:"LiquidAI/LFM2.5-2.6B-GGUF",quant:"Q4_K_M",sizeGB:1.67,weightsGB:1.67,params:2.70,active:2.70,kvPer1kMB:estKv(2.70),kvMeasured:false,maxCtx:131072}
+ {id:"hyperclovax-1-5b",name:"hyperclovax:1.5b",repo:"rippertnt/HyperCLOVAX-SEED-Text-Instruct-1.5B-Q4_K_M-GGUF",quant:"Q4_K_M",sizeGB:1.13,weightsGB:1.13,params:1.81,active:1.81,kvPer1kMB:estKv(1.81),kvMeasured:false,maxCtx:131072},
+ {id:"lfm2-5-2-6b",name:"lfm2.5:2.6b",repo:"LiquidAI/LFM2.5-2.6B-GGUF",quant:"Q4_K_M",sizeGB:1.67,weightsGB:1.67,params:2.7,active:2.7,kvPer1kMB:estKv(2.7),kvMeasured:false,maxCtx:131072},
+ {id:"qwen3-5-4b",name:"qwen3.5:4b",repo:"unsloth/Qwen3.5-4B-GGUF",quant:"Q4_K_M",sizeGB:2.74,weightsGB:2.74,params:4.21,active:4.21,kvPer1kMB:estKv(4.21),kvMeasured:false,maxCtx:262144},
+ {id:"gemma4-e4b",name:"gemma4:e4b",repo:"ggml-org/gemma-4-E4B-it-GGUF",quant:"Q4_0",sizeGB:4.65,weightsGB:4.65,params:7.52,active:7.52,kvPer1kMB:estKv(7.52),kvMeasured:false,swa:true,maxCtx:131072},
+ {id:"qwen3-5-9b",name:"qwen3.5:9b",repo:"unsloth/Qwen3.5-9B-GGUF",quant:"Q4_K_M",sizeGB:5.68,weightsGB:5.4,params:8.95,active:8.95,kvPer1kMB:40,kvMeasured:true,maxCtx:262144},
+ {id:"ornith1-5-9b",name:"ornith1.5:9b",repo:"ornith-ai/Ornith-1.5-9B-GGUF",quant:"Q4_K_M",sizeGB:5.78,weightsGB:5.78,params:9.2,active:9.2,kvPer1kMB:estKv(9.2),kvMeasured:false,maxCtx:262144},
+ {id:"glm4-9b",name:"glm4:9b",repo:"legraphista/glm-4-9b-chat-IMat-GGUF",quant:"Q4_K_S",sizeGB:5.75,weightsGB:5.75,params:9.4,active:9.4,kvPer1kMB:estKv(9.4),kvMeasured:false,maxCtx:131072},
+ {id:"gemma4-12b-it-qat",name:"gemma4:12b-it-qat",repo:"unsloth/gemma-4-12B-it-qat-GGUF",quant:"Q4_K",sizeGB:6.72,weightsGB:7.63,params:11.91,active:11.91,kvPer1kMB:3.1,kvMeasured:true,swa:true,maxCtx:262144},
+ {id:"qwen3-6-27b",name:"qwen3.6:27b",repo:"unsloth/Qwen3.6-27B-GGUF",quant:"Q4_K_M",sizeGB:16.82,weightsGB:16.82,params:26.9,active:26.9,kvPer1kMB:estKv(26.9),kvMeasured:false,maxCtx:262144},
+ {id:"qwen3-8-27b",name:"qwen3.8:27b",repo:"unsloth/Qwen3.8-27B-GGUF",quant:"Q4_K_M",sizeGB:16.46,weightsGB:16.46,params:27.32,active:27.32,kvPer1kMB:estKv(27.32),kvMeasured:false,maxCtx:262144},
+ {id:"qwen3-coder-30b",name:"qwen3-coder:30b",repo:"unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",quant:"Q4_K_M",sizeGB:18.56,weightsGB:18.56,params:30.53,active:3.3,kvPer1kMB:105.6,kvMeasured:true,maxCtx:262144},
+ {id:"qwen3-6-35b-a3b",name:"qwen3.6:35b-a3b",repo:"unsloth/Qwen3.6-35B-A3B-GGUF",quant:"Q4_K_M",sizeGB:22.13,weightsGB:22.13,params:34.66,active:3.3,kvPer1kMB:3.0,kvMeasured:true,swa:true,maxCtx:262144},
+ {id:"ornith1-5-35b-a3b",name:"ornith1.5:35b-a3b",repo:"ornith-ai/Ornith-1.5-35B-A3B-GGUF",quant:"Q4_K_M",sizeGB:21.71,weightsGB:21.71,params:35.51,active:3.0,kvPer1kMB:estKv(35.51),kvMeasured:false,maxCtx:262144},
+ {id:"qwen3-8-flash-next",name:"qwen3.8:flash-next",repo:"unsloth/Qwen3.8-Flash-Next-GGUF",quant:"Q4_K",sizeGB:111.33,weightsGB:111.33,params:176.94,active:176.94,kvPer1kMB:estKv(176.94),kvMeasured:false,maxCtx:262144},
+ {id:"inkling-small",name:"inkling:small",repo:"unsloth/Inkling-Small-GGUF",quant:"MXFP4",sizeGB:158.04,weightsGB:158.04,params:263.66,active:263.66,kvPer1kMB:estKv(263.66),kvMeasured:false,maxCtx:1048576},
+ {id:"deepseek-v4",name:"deepseek-v4",repo:"antirez/deepseek-v4-gguf",quant:"MXFP4",sizeGB:155.98,weightsGB:155.98,params:284.33,active:284.33,kvPer1kMB:estKv(284.33),kvMeasured:false,maxCtx:1048576},
+ {id:"ornith1-5-397b",name:"ornith1.5:397b",repo:"ornith-ai/Ornith-1.5-397B-GGUF",quant:"Q4_K_M",sizeGB:244.31,weightsGB:244.31,params:402.94,active:402.94,kvPer1kMB:estKv(402.94),kvMeasured:false,maxCtx:262144}
 ];
 
-let devices=[],models=[],ctxIdx=3,kvBits=16,sel={m:null,d:null},view="chips";
+let devices=[],models=[],ctxIdx=3,kvBits=16,sel={m:null,d:null},view="chips",filterText="";
 const LS="llmfit.v1";
 
 function load(){
@@ -509,8 +526,15 @@ const ICON={
 const chip=(v,l)=>`<span class="chip ${v}"><svg viewBox="0 0 12 12" aria-hidden="true">${ICON[v]}</svg>${l}</span>`;
 
 /* ---------- matrix ---------- */
+let modelTotal=0;                       // full catalogue size, before filtering
+const shownModels=()=>{
+  modelTotal=models.length;
+  const q=filterText.trim().toLowerCase();
+  return q?models.filter(m=>(m.name+" "+(m.repo||"")).toLowerCase().includes(q)):models;
+};
 function renderMatrix(){
   const ctx=CTX_STEPS[ctxIdx],t=document.getElementById("matrix");
+  const models=shownModels();
   let fitCount=0;
   let h=`<thead><tr><th>Device</th>${models.map(m=>`<th>${m.name}<br><span style="text-transform:none;letter-spacing:0;font-size:10px;color:var(--ink-3)">${m.quant} · ${gb(m.sizeGB)}${m.active<m.params?` · ${m.active}B act`:""}</span></th>`).join("")}</tr></thead><tbody>`;
   for(const d of devices){
@@ -528,7 +552,8 @@ function renderMatrix(){
   t.innerHTML=h+"</tbody>";
   document.getElementById("s-fit").textContent=fitCount;
   document.getElementById("s-dev").textContent=devices.filter(d=>d.kind!=="unknown").length;
-  document.getElementById("s-mod").textContent=models.length;
+  document.getElementById("s-mod").textContent=
+    models.length===modelTotal?modelTotal:`${models.length}/${modelTotal}`;
   t.querySelectorAll(".cell").forEach(b=>b.onclick=()=>{
     sel={m:b.dataset.m,d:b.dataset.d};
     document.getElementById("iMod").value=sel.m;document.getElementById("iDev").value=sel.d;
@@ -537,6 +562,7 @@ function renderMatrix(){
 }
 function renderTable(){
   const ctx=CTX_STEPS[ctxIdx],t=document.getElementById("matrix");
+  const models=shownModels();
   let h=`<thead><tr><th>Device</th><th>Model</th><th>Verdict</th><th>Required</th><th>Budget</th><th>On CPU</th><th>tok/s</th></tr></thead><tbody>`;
   for(const d of devices)for(const m of models){
     const r=evaluate(m,d,ctx);
@@ -704,6 +730,52 @@ function parseHF(raw){
           maxCtx:g.context_length||131072,
           kvPer1kMB:Math.round(40*Math.pow(P/8.95,.65)),
           moe:/moe/i.test(g.architecture||"")||/A\d+B/i.test(d.id||"")};
+}
+function importCatalogue(raw){
+  const incoming=JSON.parse(raw);
+  if(!Array.isArray(incoming)) throw new Error("Expected a JSON array of models.");
+  let added=0,updated=0,skipped=0;
+  for(const r of incoming){
+    const size=+r.sizeGB||0, params=+r.params||0;
+    if(!r.name||!size||!params){skipped++;continue}
+    const id=(r.id||r.name).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    const rec={id,name:r.name,repo:r.repo||"",quant:r.quant||"",
+      sizeGB:size,weightsGB:+r.weightsGB||size,params,
+      active:+r.active||params,                    // null active means MoE, unknown
+      kvPer1kMB:+r.kvPer1kMB||estKv(params),
+      kvMeasured:!!r.kvMeasured,swa:!!r.swa,maxCtx:+r.maxCtx||131072};
+    const at=models.findIndex(m=>m.id===id);
+    // Never let an import clobber a value someone measured.
+    if(at>=0){ if(models[at].kvMeasured&&!rec.kvMeasured){rec.kvPer1kMB=models[at].kvPer1kMB;rec.kvMeasured=true;}
+               models[at]=rec; updated++; }
+    else { models.push(rec); added++; }
+  }
+  return {added,updated,skipped,total:models.length};
+}
+function wireImport(){
+  const btn=document.getElementById("importCat"),file=document.getElementById("catFile");
+  if(!btn||!file) return;
+  btn.onclick=()=>file.click();
+  file.onchange=()=>{
+    const f=file.files&&file.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      try{
+        const r=importCatalogue(String(rd.result));
+        save(); renderAll();
+        alertless(`Imported ${r.added} new and updated ${r.updated}`
+          +(r.skipped?`, skipped ${r.skipped} without a name, size or parameter count`:"")
+          +`. ${r.total} models now in the catalogue.`);
+      }catch(e){ alertless("Could not read that file: "+e.message,true) }
+      file.value="";
+    };
+    rd.readAsText(f);
+  };
+}
+function alertless(msg,bad){
+  const el=document.getElementById("importNote");
+  if(!el) return; el.style.display="block";
+  el.className="note "+(bad?"bad":"ok"); el.textContent=msg;
 }
 function wirePreset(){
   const sel=document.getElementById("f-preset"); if(!sel) return;
@@ -882,6 +954,9 @@ document.getElementById("ctx").addEventListener("input",e=>{
 document.getElementById("kvbits").addEventListener("change",e=>{kvBits=+e.target.value;renderAll()});
 document.getElementById("iMod").addEventListener("change",e=>{sel.m=e.target.value;renderInspector()});
 document.getElementById("iDev").addEventListener("change",e=>{sel.d=e.target.value;renderInspector()});
+document.getElementById("filter").addEventListener("input",e=>{
+  filterText=e.target.value; view==="chips"?renderMatrix():renderTable();});
+wireImport();
 document.getElementById("addDev").onclick=()=>devDialog(null);
 document.getElementById("addMod").onclick=()=>modDialog(null);
 document.getElementById("reset").onclick=()=>{

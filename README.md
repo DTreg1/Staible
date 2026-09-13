@@ -57,6 +57,28 @@ Devices and models are editable, and the dashed tiles add new ones.
 
 ![Device cards for an M3 Air, M4 Air, RTX 4090 desktop, Ryzen mini PC and Jetson Nano, each showing memory, fast budget and bandwidth, tagged measured or est, followed by a dashed Add a device tile](docs/screenshots/devices.png)
 
+### Adding models
+
+The catalogue ships **17 models spanning 1.8B to 403B parameters**, dense and MoE, every
+figure read from the Hugging Face API. That is a deliberate sample, not a mirror: Hugging
+Face hosts well over a hundred thousand GGUF repositories, each needing its own API call
+for file sizes, which is hours of requests and tens of megabytes of JSON — and a matrix
+with a hundred thousand columns is not a table.
+
+Three ways to get the models you actually care about:
+
+```bash
+# bulk: generate a catalogue locally, then load it with "Import catalogue"
+./scripts/fetch-hf-catalog.py --top 50 > my-catalog.json
+./scripts/fetch-hf-catalog.py unsloth/Qwen3.5-9B-GGUF org/Another-GGUF > my-catalog.json
+```
+
+or import a single repo from inside the page, or type one in by hand. Importing updates
+models it already knows by id rather than duplicating them, and **will not overwrite a
+measured KV value with an estimated one**.
+
+The filter box narrows the matrix as the catalogue grows.
+
 ### Adding hardware
 
 You should not have to know your machine's memory bandwidth in GB/s. Pick the chip or
@@ -133,7 +155,7 @@ scripts/fetch-hf-catalog.py  Hugging Face GGUF specs -> data/hf-catalog.json
 scripts/check-selfcontained.py  CI guard: the page must stay dependency-free
 test/run.mjs                 the test suite (node test/run.mjs)
 data/fleet.example.json      example inventory (your own fleet.json is gitignored)
-data/hf-catalog.json         fetched model catalog
+data/hf-catalog.json         the shipped catalogue, as fetched from Hugging Face
 ```
 
 ## Use

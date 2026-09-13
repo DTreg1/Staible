@@ -70,7 +70,10 @@ def fetch(repo):
         raise ValueError(f"no plausible quant file (saw {sorted(sizes)})")
 
     arch = g.get("architecture") or ""
-    moe = "moe" in arch.lower() or bool(re.search(r"A\d+B", repo, re.I))
+    # Repo names encode active params for MoE as "-A3B-"; the API never reports them.
+    am = re.search(r"[-_]A(\d+(?:\.\d+)?)B\b", repo, re.I)
+    active_b = float(am.group(1)) if am else None
+    moe = "moe" in arch.lower() or active_b is not None
     name = repo.split("/")[-1]
     name = re.sub(r"-?GGUF$", "", name, flags=re.I)
     return {
@@ -78,7 +81,7 @@ def fetch(repo):
         "name": name, "repo": repo, "quant": pick,
         "sizeGB": quants[pick], "weightsGB": quants[pick],
         "params": round(params, 2),
-        "active": None if moe else round(params, 2),   # API cannot report active params
+        "active": active_b if active_b else (None if moe else round(params, 2)),
         "kvPer1kMB": est_kv(params), "kvMeasured": False,
         "maxCtx": g.get("context_length") or 131072,
         "arch": arch, "quants": dict(sorted(quants.items())),
@@ -104,7 +107,8 @@ def main():
         try:
             rec = fetch(r)
             out.append(rec)
-            note = "  MoE: set active params by hand" if rec["active"] is None else ""
+            note = ("  MoE: set active params by hand" if rec["active"] is None
+                    else (f"  MoE {rec['active']}B active" if rec["active"] < rec["params"] else ""))
             print(f"{r:50s} {rec['params']:7.2f}B  {rec['quant']:7s} "
                   f"{rec['sizeGB']:6.2f}GB  ctx={rec['maxCtx']}{note}", file=sys.stderr)
         except Exception as e:

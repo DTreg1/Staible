@@ -65,7 +65,8 @@ export function loadEngine() {
   vm.runInContext(source + "\n;globalThis.__engine = {" +
     ["budget", "evaluate", "kvGB", "maxCtxThatFits", "caveats", "parseHF",
      "findPreset", "DERATE", "PP", "PRESETS", "CTX_STEPS", "OVERHEAD",
-     "DEFAULT_DEVICES", "DEFAULT_MODELS", "estKv", "devices", "models", "fmtCtx", "gb"]
+     "DEFAULT_DEVICES", "DEFAULT_MODELS", "estKv", "devices", "models", "fmtCtx", "gb",
+     "importCatalogue", "SLOW_FRAC"]
       .map((n) => `${n}: typeof ${n} !== "undefined" ? ${n} : undefined`).join(", ") +
     "};", sandbox, { filename: "index.html:<script>" });
 
@@ -73,5 +74,7 @@ export function loadEngine() {
   if (!engine.evaluate) throw new Error("engine did not expose evaluate()");
   // Some tests need to vary KV precision, which the page holds in a module-level let.
   engine.setKvBits = (b) => vm.runInContext(`kvBits = ${Number(b)};`, sandbox);
+  engine.currentModels = () => vm.runInContext("models", sandbox);
+  engine.resetModels = () => vm.runInContext("models = structuredClone(DEFAULT_MODELS);", sandbox);
   return engine;
 }

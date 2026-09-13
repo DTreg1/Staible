@@ -1,96 +1,347 @@
 [
  {
-  "repo": "unsloth/Qwen3.5-9B-GGUF",
-  "params": 8.95,
-  "ctx": 262144,
+  "id": "hyperclovax-seed-text-instruct-1-5b-q4-k-m",
+  "name": "HyperCLOVAX-SEED-Text-Instruct-1.5B-Q4_K_M",
+  "repo": "rippertnt/HyperCLOVAX-SEED-Text-Instruct-1.5B-Q4_K_M-GGUF",
   "quant": "Q4_K_M",
-  "sizeGB": 5.68,
+  "sizeGB": 1.13,
+  "weightsGB": 1.13,
+  "params": 1.81,
+  "active": 1.81,
+  "kvPer1kMB": 14,
+  "kvMeasured": false,
+  "maxCtx": 131072,
+  "arch": "llama",
   "quants": {
-   "Q4_0": 5.38,
-   "Q4_K_M": 5.68,
-   "Q4_K_S": 5.39,
-   "Q5_K_M": 6.58,
-   "Q8_0": 9.53
+   "Q4_K_M": 1.13
   }
  },
  {
-  "repo": "unsloth/Qwen3.8-27B-GGUF",
-  "params": 27.32,
-  "ctx": 262144,
+  "id": "lfm2-5-2-6b",
+  "name": "LFM2.5-2.6B",
+  "repo": "LiquidAI/LFM2.5-2.6B-GGUF",
   "quant": "Q4_K_M",
-  "sizeGB": 16.46,
+  "sizeGB": 1.67,
+  "weightsGB": 1.67,
+  "params": 2.7,
+  "active": 2.7,
+  "kvPer1kMB": 18,
+  "kvMeasured": false,
+  "maxCtx": 131072,
+  "arch": "lfm2",
   "quants": {
-   "Q4_0": 17.43,
-   "Q4_K_M": 16.46,
-   "Q4_K_S": 15.36,
-   "Q5_K_M": 19.77,
-   "Q8_0": 29.05
+   "Q4_K_M": 1.67,
+   "Q5_K_M": 1.94,
+   "Q6_K": 2.22,
+   "Q8_0": 2.87
   }
  },
  {
-  "repo": "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",
-  "params": 30.53,
-  "ctx": 262144,
+  "id": "qwen3-5-4b",
+  "name": "Qwen3.5-4B",
+  "repo": "unsloth/Qwen3.5-4B-GGUF",
   "quant": "Q4_K_M",
-  "sizeGB": 18.56,
+  "sizeGB": 2.74,
+  "weightsGB": 2.74,
+  "params": 4.21,
+  "active": 4.21,
+  "kvPer1kMB": 24,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen35",
   "quants": {
-   "Q4_0": 17.38,
-   "Q4_K_M": 18.56,
-   "Q4_K_S": 17.46,
-   "Q5_K_M": 21.73,
-   "Q8_0": 32.48
+   "Q4_0": 2.58,
+   "Q4_K": 2.91,
+   "Q4_K_M": 2.74,
+   "Q4_K_S": 2.59,
+   "Q5_K_M": 3.14,
+   "Q5_K_S": 3.02,
+   "Q8_0": 4.48
   }
  },
  {
-  "repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
-  "params": 34.66,
-  "ctx": 262144,
-  "quant": "Q4_K_M",
-  "sizeGB": 22.13,
-  "quants": {
-   "MXFP4": 21.71,
-   "Q4_K_M": 22.13,
-   "Q4_K_S": 20.89,
-   "Q5_K_M": 26.46,
-   "Q8_0": 36.9
-  }
- },
- {
-  "repo": "unsloth/Qwen3.6-27B-GGUF",
-  "params": 26.9,
-  "ctx": 262144,
-  "quant": "Q4_K_M",
-  "sizeGB": 16.82,
-  "quants": {
-   "Q4_0": 15.79,
-   "Q4_K_M": 16.82,
-   "Q4_K_S": 15.86,
-   "Q5_K_M": 19.51,
-   "Q8_0": 28.6
-  }
- },
- {
+  "id": "gemma-4-e4b-it",
+  "name": "gemma-4-E4B-it",
   "repo": "ggml-org/gemma-4-E4B-it-GGUF",
-  "params": 7.52,
-  "ctx": 131072,
   "quant": "Q4_0",
   "sizeGB": 4.65,
+  "weightsGB": 4.65,
+  "params": 7.52,
+  "active": 7.52,
+  "kvPer1kMB": 36,
+  "kvMeasured": false,
+  "maxCtx": 131072,
+  "arch": "gemma4",
   "quants": {
    "Q4_0": 4.65,
    "Q8_0": 8.13
   }
  },
  {
-  "repo": "LiquidAI/LFM2.5-2.6B-GGUF",
-  "params": 2.7,
-  "ctx": 131072,
+  "id": "qwen3-5-9b",
+  "name": "Qwen3.5-9B",
+  "repo": "unsloth/Qwen3.5-9B-GGUF",
   "quant": "Q4_K_M",
-  "sizeGB": 1.67,
+  "sizeGB": 5.68,
+  "weightsGB": 5.68,
+  "params": 8.95,
+  "active": 8.95,
+  "kvPer1kMB": 40,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen35",
   "quants": {
-   "Q4_K_M": 1.67,
-   "Q5_K_M": 1.94,
-   "Q6_K": 2.22,
-   "Q8_0": 2.87
+   "Q4_0": 5.38,
+   "Q4_K": 5.97,
+   "Q4_K_M": 5.68,
+   "Q4_K_S": 5.39,
+   "Q5_K_M": 6.58,
+   "Q5_K_S": 6.36,
+   "Q8_0": 9.53
+  }
+ },
+ {
+  "id": "glm-4-9b-chat-imat",
+  "name": "glm-4-9b-chat-IMat",
+  "repo": "legraphista/glm-4-9b-chat-IMat-GGUF",
+  "quant": "Q4_K_S",
+  "sizeGB": 5.75,
+  "weightsGB": 5.75,
+  "params": 9.4,
+  "active": 9.4,
+  "kvPer1kMB": 41,
+  "kvMeasured": false,
+  "maxCtx": 131072,
+  "arch": "chatglm",
+  "quants": {
+   "Q4_K": 6.25,
+   "Q4_K_S": 5.75,
+   "Q5_K_S": 6.69,
+   "Q6_K": 8.26,
+   "Q8_0": 9.99
+  }
+ },
+ {
+  "id": "ornith-1-5-9b",
+  "name": "Ornith-1.5-9B",
+  "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+  "quant": "Q4_K_M",
+  "sizeGB": 5.78,
+  "weightsGB": 5.78,
+  "params": 9.2,
+  "active": 9.2,
+  "kvPer1kMB": 41,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen35",
+  "quants": {
+   "Q4_K_M": 5.78,
+   "Q5_K_M": 6.64,
+   "Q6_K": 7.56,
+   "Q8_0": 9.79
+  }
+ },
+ {
+  "id": "gemma-4-12b-it-qat",
+  "name": "gemma-4-12B-it-qat",
+  "repo": "unsloth/gemma-4-12B-it-qat-GGUF",
+  "quant": "Q4_K",
+  "sizeGB": 6.72,
+  "weightsGB": 6.72,
+  "params": 11.91,
+  "active": 11.91,
+  "kvPer1kMB": 48,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "gemma4",
+  "quants": {
+   "Q4_K": 6.72
+  }
+ },
+ {
+  "id": "qwen3-6-27b",
+  "name": "Qwen3.6-27B",
+  "repo": "unsloth/Qwen3.6-27B-GGUF",
+  "quant": "Q4_K_M",
+  "sizeGB": 16.82,
+  "weightsGB": 16.82,
+  "params": 26.9,
+  "active": 26.9,
+  "kvPer1kMB": 82,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen35",
+  "quants": {
+   "Q4_0": 15.79,
+   "Q4_K": 17.61,
+   "Q4_K_M": 16.82,
+   "Q4_K_S": 15.86,
+   "Q5_K_M": 19.51,
+   "Q5_K_S": 18.96,
+   "Q8_0": 28.6
+  }
+ },
+ {
+  "id": "qwen3-8-27b",
+  "name": "Qwen3.8-27B",
+  "repo": "unsloth/Qwen3.8-27B-GGUF",
+  "quant": "Q4_K_M",
+  "sizeGB": 16.46,
+  "weightsGB": 16.46,
+  "params": 27.32,
+  "active": 27.32,
+  "kvPer1kMB": 83,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen35",
+  "quants": {
+   "Q4_0": 17.43,
+   "Q4_K": 17.56,
+   "Q4_K_M": 16.46,
+   "Q4_K_S": 15.36,
+   "Q5_K_M": 19.77,
+   "Q5_K_S": 18.67,
+   "Q8_0": 29.05
+  }
+ },
+ {
+  "id": "qwen3-coder-30b-a3b-instruct",
+  "name": "Qwen3-Coder-30B-A3B-Instruct",
+  "repo": "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+  "quant": "Q4_K_M",
+  "sizeGB": 18.56,
+  "weightsGB": 18.56,
+  "params": 30.53,
+  "active": 3.0,
+  "kvPer1kMB": 89,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen3moe",
+  "quants": {
+   "Q4_0": 17.38,
+   "Q4_K": 17.67,
+   "Q4_K_M": 18.56,
+   "Q4_K_S": 17.46,
+   "Q5_K_M": 21.73,
+   "Q5_K_S": 21.08,
+   "Q8_0": 32.48
+  }
+ },
+ {
+  "id": "qwen3-6-35b-a3b",
+  "name": "Qwen3.6-35B-A3B",
+  "repo": "unsloth/Qwen3.6-35B-A3B-GGUF",
+  "quant": "Q4_K_M",
+  "sizeGB": 22.13,
+  "weightsGB": 22.13,
+  "params": 34.66,
+  "active": 3.0,
+  "kvPer1kMB": 96,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen35moe",
+  "quants": {
+   "MXFP4": 21.71,
+   "Q4_K": 22.36,
+   "Q4_K_M": 22.13,
+   "Q4_K_S": 20.89,
+   "Q5_K_M": 26.46,
+   "Q5_K_S": 24.94,
+   "Q8_0": 36.9
+  }
+ },
+ {
+  "id": "ornith-1-5-35b-a3b",
+  "name": "Ornith-1.5-35B-A3B",
+  "repo": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+  "quant": "Q4_K_M",
+  "sizeGB": 21.71,
+  "weightsGB": 21.71,
+  "params": 35.51,
+  "active": 3.0,
+  "kvPer1kMB": 98,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen35moe",
+  "quants": {
+   "Q4_K_M": 21.71,
+   "Q5_K_M": 25.35,
+   "Q6_K": 29.21,
+   "Q8_0": 37.8
+  }
+ },
+ {
+  "id": "qwen3-8-flash-next",
+  "name": "Qwen3.8-Flash-Next",
+  "repo": "unsloth/Qwen3.8-Flash-Next-GGUF",
+  "quant": "Q4_K",
+  "sizeGB": 111.33,
+  "weightsGB": 111.33,
+  "params": 176.94,
+  "active": 176.94,
+  "kvPer1kMB": 278,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen4exp",
+  "quants": {
+   "Q4_K": 111.33,
+   "Q6_K": 169.17,
+   "Q8_0": 195.15
+  }
+ },
+ {
+  "id": "inkling-small",
+  "name": "Inkling-Small",
+  "repo": "unsloth/Inkling-Small-GGUF",
+  "quant": "MXFP4",
+  "sizeGB": 158.04,
+  "weightsGB": 158.04,
+  "params": 263.66,
+  "active": 263.66,
+  "kvPer1kMB": 361,
+  "kvMeasured": false,
+  "maxCtx": 1048576,
+  "arch": "inkling",
+  "quants": {
+   "MXFP4": 158.04,
+   "Q8_0": 280.28
+  }
+ },
+ {
+  "id": "deepseek-v4",
+  "name": "deepseek-v4",
+  "repo": "antirez/deepseek-v4-gguf",
+  "quant": "MXFP4",
+  "sizeGB": 155.98,
+  "weightsGB": 155.98,
+  "params": 284.33,
+  "active": 284.33,
+  "kvPer1kMB": 379,
+  "kvMeasured": false,
+  "maxCtx": 1048576,
+  "arch": "deepseek4",
+  "quants": {
+   "MXFP4": 155.98
+  }
+ },
+ {
+  "id": "ornith-1-5-397b",
+  "name": "Ornith-1.5-397B",
+  "repo": "ornith-ai/Ornith-1.5-397B-GGUF",
+  "quant": "Q4_K_M",
+  "sizeGB": 244.31,
+  "weightsGB": 244.31,
+  "params": 402.94,
+  "active": null,
+  "kvPer1kMB": 475,
+  "kvMeasured": false,
+  "maxCtx": 262144,
+  "arch": "qwen35moe",
+  "quants": {
+   "Q4_K_M": 244.31,
+   "Q5_K_M": 286.32,
+   "Q6_K": 330.97,
+   "Q8_0": 428.52
   }
  }
 ]

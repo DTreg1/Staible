@@ -301,6 +301,77 @@ describe("shipped defaults stay self-consistent", () => {
   });
 });
 
+describe("bulk catalogue import", () => {
+  const row = (o = {}) => ({ name: "newmodel:7b", sizeGB: 4.2, params: 7.1, maxCtx: 131072, ...o });
+
+  it("adds models it has not seen", () => {
+    E.resetModels();
+    const before = E.currentModels().length;
+    const r = E.importCatalogue(JSON.stringify([row()]));
+    eq(r.added, 1);
+    eq(E.currentModels().length, before + 1);
+  });
+  it("updates an existing model rather than duplicating it", () => {
+    E.resetModels();
+    const existing = E.currentModels()[0];
+    const before = E.currentModels().length;
+    const r = E.importCatalogue(JSON.stringify([
+      { id: existing.id, name: existing.name, sizeGB: 99, params: existing.params },
+    ]));
+    eq(r.updated, 1);
+    eq(E.currentModels().length, before, "must not duplicate");
+    eq(E.currentModels().find((m) => m.id === existing.id).sizeGB, 99);
+  });
+  it("never overwrites a measured KV with an estimate", () => {
+    E.resetModels();
+    const measured = E.currentModels().find((m) => m.kvMeasured);
+    ok(measured, "fixture needs a measured model");
+    const was = measured.kvPer1kMB;
+    E.importCatalogue(JSON.stringify([
+      { id: measured.id, name: measured.name, sizeGB: measured.sizeGB,
+        params: measured.params, kvPer1kMB: 9999, kvMeasured: false },
+    ]));
+    const after = E.currentModels().find((m) => m.id === measured.id);
+    eq(after.kvPer1kMB, was, "a measurement must survive an estimated import");
+    eq(after.kvMeasured, true);
+  });
+  it("skips rows missing a name, size or parameter count", () => {
+    E.resetModels();
+    const r = E.importCatalogue(JSON.stringify([
+      row(), { name: "nosize:1b", params: 1 }, { sizeGB: 2, params: 2 }, { name: "noparams", sizeGB: 2 },
+    ]));
+    eq(r.added, 1); eq(r.skipped, 3);
+  });
+  it("treats a null active-parameter count as dense rather than crashing", () => {
+    E.resetModels();
+    E.importCatalogue(JSON.stringify([row({ name: "moe:x", active: null })]));
+    const m = E.currentModels().find((x) => x.name === "moe:x");
+    eq(m.active, m.params);
+  });
+  it("rejects anything that is not an array", () => {
+    let threw = false;
+    try { E.importCatalogue('{"not":"an array"}'); } catch { threw = true; }
+    ok(threw);
+  });
+});
+
+describe("the shipped catalogue spans a useful range", () => {
+  it("covers small laptops through machines nobody has", () => {
+    const p = E.DEFAULT_MODELS.map((m) => m.params);
+    ok(Math.min(...p) < 3, "needs something a 4 GB board could attempt");
+    ok(Math.max(...p) > 100, "needs something that cannot run anywhere");
+    ok(E.DEFAULT_MODELS.length >= 12, "too few models to be a useful matrix");
+  });
+  it("includes both dense and MoE models", () => {
+    ok(E.DEFAULT_MODELS.some((m) => m.active < m.params), "no MoE in the catalogue");
+    ok(E.DEFAULT_MODELS.some((m) => m.active === m.params), "no dense model in the catalogue");
+  });
+  it("every model carries a Hugging Face repo it came from", () => {
+    for (const m of E.DEFAULT_MODELS)
+      ok(m.repo && m.repo.includes("/"), `${m.name} has no source repo`);
+  });
+});
+
 /* ------------------------------------------------------------------------- */
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) { console.log("\nfailures:"); results.forEach((r) => console.log("  - " + r)); }
