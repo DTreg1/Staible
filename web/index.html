@@ -1,4 +1,4 @@
-<title>Fleet Fit Bench</title>
+<title>Staible</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -157,6 +157,19 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .note{font-size:12px;padding:9px 11px;border-radius:6px;background:var(--surface-2);color:var(--ink-2);margin:0}
 .note.bad{background:var(--s-crit-bg);color:var(--s-crit)}
 .note.ok{background:var(--s-good-bg);color:var(--s-good)}
+.cav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.cav li{font-size:12px;line-height:1.5;color:var(--ink-2);
+  border-left:3px solid var(--ink-3);border-radius:2px;padding-left:10px}
+.cav li.warn{border-left-color:var(--s-warn)}
+.cav li.bad{border-left-color:var(--s-crit)}
+.cav b{font-weight:600;color:var(--ink)}
+.caveathead{display:flex;align-items:center;gap:7px;padding:13px 18px 0;font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+.assume{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.assume .card{padding:16px 18px}
+.assume h3{font-size:14px;font-weight:600;margin-bottom:7px}
+.assume p{margin:0;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.est{border-bottom:1px dotted var(--ink-3);cursor:help}
 
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:0;max-width:520px;width:calc(100% - 32px);box-shadow:0 24px 60px -20px rgba(0,0,0,.45)}
 dialog::backdrop{background:rgba(10,16,20,.55)}
@@ -181,9 +194,9 @@ svg text{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums
   <div class="wrap">
     <div class="head">
       <div class="brand">
-        <div class="eyebrow">Local inference · capacity planning</div>
-        <h1>Fleet Fit Bench</h1>
-        <p>Which models actually run on which of your machines — memory budget, placement, and generation speed, computed from measured hardware rather than spec sheets.</p>
+        <div class="eyebrow">A stable of machines</div>
+        <h1>Staible</h1>
+        <p>Which local models actually run on which of your machines — memory budget, layer placement, and generation speed, computed from measured hardware rather than spec sheets.</p>
       </div>
       <div class="stats">
         <div class="stat"><div class="k">Devices</div><div class="v mono" id="s-dev">—</div></div>
@@ -214,7 +227,7 @@ svg text{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums
     <div style="flex:1"></div>
     <button id="addDev">+ Add device</button>
     <button id="addMod">+ Add model</button>
-    <button id="reset" class="ghost">Reset to my fleet</button>
+    <button id="reset" class="ghost">Reset to defaults</button>
   </div>
 
   <section>
@@ -287,6 +300,8 @@ svg text{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums
         <div class="ro"><span class="k">Generation speed</span><span class="v" id="r-tok"></span></div>
         <div class="ro"><span class="k">Max context that fits</span><span class="v" id="r-max"></span></div>
         <div class="ro"><span class="k">Time to first token<br><span style="font-size:11px">(8k-token prompt)</span></span><span class="v" id="r-ttft"></span></div>
+        <div class="caveathead">What this calculation assumes</div>
+        <div style="padding:10px 18px 16px"><ul class="cav" id="r-cav"></ul></div>
       </div>
     </div>
   </section>
@@ -305,12 +320,52 @@ svg text{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums
     <div class="grid" id="mods"></div>
   </section>
 
+  <section>
+    <div class="sechead">
+      <div><h2>Assumptions and limits</h2>
+      <p>What the whole model takes for granted. Worth reading before betting a download on it.</p></div>
+    </div>
+    <div class="assume">
+      <div class="card"><h3>Speed is bandwidth, not compute</h3>
+        <p>Generation is treated as purely memory-bandwidth bound, because reading every active weight
+        dominates. That holds for single-stream local inference on the hardware here. It breaks down for
+        batched serving, for very small models on fast memory, and anywhere compute is the real ceiling.</p></div>
+      <div class="card"><h3>One number for a whole memory pool</h3>
+        <p>Each device gets a single effective bandwidth. Real machines vary by access pattern, thermal
+        state, and what else is resident. Treat every tok/s as a ceiling you approach, not a promise.</p></div>
+      <div class="card"><h3>KV estimates fail by architecture</h3>
+        <p>Extrapolating KV from parameter count assumes full attention on every layer. Sliding-window
+        models cap the cache instead: gemma4:12b-it-qat was estimated at 48 MB per 1k tokens and
+        measured at 3.1. Anything not tagged <span class="tag meas">measured</span> can be wrong by an
+        order of magnitude.</p></div>
+      <div class="card"><h3>Placement is predicted, not observed</h3>
+        <p>The CPU/GPU split is inferred from budgets. The runtime decides for real, and may keep more
+        or fewer layers resident than modelled, especially near the boundary.</p></div>
+      <div class="card"><h3>Overhead is a flat allowance</h3>
+        <p>A fixed 0.6 GB stands in for compute buffers and runtime working memory. It actually varies
+        with batch size, context, and backend, and is the least defensible constant in the model.</p></div>
+      <div class="card"><h3>Fit is not capability</h3>
+        <p>Everything here is about bytes and bandwidth. A model that fits comfortably may still be
+        worse at your task than one that barely runs. Quantisation especially trades quality for size
+        in ways no number on this page captures.</p></div>
+    </div>
+  </section>
+
   <footer>
     <p><b>How the numbers are derived.</b> Generation is memory-bandwidth bound: every token requires reading every active weight, so <span class="mono">tok/s ≈ effective bandwidth ÷ active weight bytes</span>. Ultron's 83&nbsp;GB/s constant is measured — qwen3.5:9b, 5.4&nbsp;GB of weights, 15.4&nbsp;tok/s observed. Other bandwidths are vendor figures derated to ~80%, flagged <span class="tag">est</span>.</p>
     <p><b>Why spilling hurts your two machine types differently.</b> Effective bandwidth is blended harmonically across the fast and slow pools. On unified memory the slow pool is the same physical RAM, so a 45% CPU split costs about 10% — measured. On a discrete GPU the slow pool is across PCIe, so the same split is catastrophic. One word, two behaviours.</p>
     <p><b>MoE models.</b> Memory tracks total parameters; speed tracks active parameters. A 30B/3.3B-active model occupies like a 30B and generates like a small dense model.</p>
-    <p><b>Where the model specs come from.</b> Parameter counts, trained context, and per-quant file sizes are read from the Hugging Face API for each GGUF repo, with split shards summed and vision projectors excluded. KV cache per 1k tokens is estimated from parameter count, anchored to the one value measured here — 40 MB/1k for qwen3.5:9b — so it is a starting point, not a measurement. Edit any model to override it.</p>
-<p>Edits are stored in this browser only. "Reset to my fleet" restores the measured baseline.</p>
+    <p><b>Where the model specs come from.</b> Parameter counts, trained context, and per-quant file
+      sizes are read from the Hugging Face API for each GGUF repo, with split shards summed and
+      vision projectors excluded.</p>
+    <p><b>KV estimates are the weakest number here, and they fail by architecture.</b> Where a model
+      is not marked <span class="tag meas">measured</span>, its KV cost is extrapolated from
+      parameter count — which assumes every layer keeps a full cache. Models tagged
+      <span class="tag">SWA</span> use sliding-window attention and cap the cache instead of growing
+      it: gemma4:12b-it-qat was estimated at 48 MB per 1k tokens and measured at 3.1, a 15-fold
+      error, with resident size essentially flat from 4k to 131k context. Measure before trusting an
+      estimate on a long-context plan.</p>
+    <p>Edits are stored in this browser only. "Reset to defaults" restores the baseline compiled into the page.</p>
   </footer>
 </div>
 
@@ -331,30 +386,28 @@ const fmtCtx=n=>n>=1024?(n/1024>=1024?(n/1048576)+"M":(n/1024)+"k"):n;
 const gb=n=>n.toFixed(n<10?2:1)+" GB";
 
 const DEFAULT_DEVICES=[
- {id:"ultron",name:"ultron",desc:"MacBook Air · Apple M3",kind:"unified",ramGB:16,vramGB:0,bwGB:83,bwMeasured:true,wiredFrac:.75,ppRate:149,note:"Measured 2026-09-13"},
- {id:"vision",name:"vision",desc:"MacBook Air · Apple M4",kind:"unified",ramGB:16,vramGB:0,bwGB:100,bwMeasured:false,wiredFrac:.75,ppRate:180,note:"M4 ~120 GB/s derated"},
- {id:"optimus",name:"optimus",desc:"i9-13900K · RTX 4090",kind:"discrete",ramGB:32,vramGB:24,bwGB:800,bwMeasured:false,bwCpuGB:55,ppRate:3000,note:"Unreachable at last probe"},
- {id:"r2d2",name:"r2d2",desc:"Ryzen R2514 · no dGPU",kind:"cpu",ramGB:8,vramGB:0,bwGB:25,bwMeasured:false,osReserveGB:2,ppRate:25,note:"CPU-only"},
- {id:"jetson",name:"jetson",desc:"Jetson Nano · Tegra X1",kind:"cpu",ramGB:4,vramGB:0,bwGB:20,bwMeasured:false,osReserveGB:1.5,ppRate:12,note:"JetPack R32.7.6"},
- {id:"sentinel",name:"sentinel",desc:"Unverified — fill in specs",kind:"unknown",ramGB:0,vramGB:0,bwGB:0,bwMeasured:false,note:"No SSH response"},
- {id:"deadpool",name:"deadpool",desc:"Windows — fill in specs",kind:"unknown",ramGB:0,vramGB:0,bwGB:0,bwMeasured:false,note:"No SSH response"}
+ {id:"m3-air",name:"m3-air",desc:"MacBook Air · Apple M3 · 16 GB",kind:"unified",ramGB:16,vramGB:0,bwGB:83,bwMeasured:true,wiredFrac:.75,ppRate:149,note:"Bandwidth and prompt rate measured"},
+ {id:"m4-air",name:"m4-air",desc:"MacBook Air · Apple M4 · 16 GB",kind:"unified",ramGB:16,vramGB:0,bwGB:100,bwMeasured:false,wiredFrac:.75,ppRate:180,note:"Vendor figure derated ~20%"},
+ {id:"rtx4090",name:"rtx-4090",desc:"Desktop · RTX 4090 24 GB · 32 GB RAM",kind:"discrete",ramGB:32,vramGB:24,bwGB:800,bwMeasured:false,bwCpuGB:55,ppRate:3000,note:"Vendor figure derated ~20%"},
+ {id:"ryzen-mini",name:"ryzen-mini",desc:"Mini PC · Ryzen embedded · 8 GB · no dGPU",kind:"cpu",ramGB:8,vramGB:0,bwGB:25,bwMeasured:false,osReserveGB:2,ppRate:25,note:"CPU only"},
+ {id:"jetson-nano",name:"jetson-nano",desc:"Jetson Nano · Tegra X1 · 4 GB",kind:"cpu",ramGB:4,vramGB:0,bwGB:20,bwMeasured:false,osReserveGB:1.5,ppRate:12,note:"Below the floor for useful LLM inference"},
+ {id:"unconfigured",name:"your-box",desc:"Not probed yet — edit to add specs",kind:"unknown",ramGB:0,vramGB:0,bwGB:0,bwMeasured:false,note:"Placeholder"}
 ];
 
 // kvPer1kMB: megabytes of KV cache per 1024 tokens at f16.
 // estKv: KV cache MB per 1k tokens, calibrated to the one measured point
-// (qwen3.5:9b = 8.95B -> 40 MB/1k, measured on ultron) and scaled by params^0.65.
+// (qwen3.5:9b = 8.95B -> 40 MB/1k, measured) and scaled by params^0.65. Wildly wrong
+// for sliding-window architectures -- see the gemma4 entry, measured 13x lower.
 const estKv=P=>Math.round(40*Math.pow(P/8.95,.65));
 const DEFAULT_MODELS=[
  {id:"qwen35-9b",name:"qwen3.5:9b",repo:"unsloth/Qwen3.5-9B-GGUF",quant:"Q4_K_M",sizeGB:5.68,weightsGB:5.4,params:8.95,active:8.95,kvPer1kMB:40,kvMeasured:true,maxCtx:262144},
+ {id:"gemma4-12b-qat",name:"gemma4:12b-it-qat",repo:"unsloth/gemma-4-12B-it-qat-GGUF",quant:"Q4_K",sizeGB:7.2,weightsGB:7.63,params:11.91,active:11.91,kvPer1kMB:3.1,kvMeasured:true,swa:true,maxCtx:262144},
  {id:"qwen38-27b",name:"qwen3.8:27b",repo:"unsloth/Qwen3.8-27B-GGUF",quant:"Q4_K_M",sizeGB:16.46,weightsGB:16.46,params:27.32,active:27.32,kvPer1kMB:estKv(27.32),kvMeasured:false,maxCtx:262144},
  {id:"qwen3coder-30b",name:"qwen3-coder:30b",repo:"unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",quant:"Q4_K_M",sizeGB:18.56,weightsGB:18.56,params:30.53,active:3.3,kvPer1kMB:estKv(30.53),kvMeasured:false,maxCtx:262144},
  {id:"qwen36-35b",name:"qwen3.6:35b-a3b",repo:"unsloth/Qwen3.6-35B-A3B-GGUF",quant:"Q4_K_M",sizeGB:22.13,weightsGB:22.13,params:34.66,active:3.3,kvPer1kMB:estKv(34.66),kvMeasured:false,maxCtx:262144},
  {id:"qwen36-27b",name:"qwen3.6:27b",repo:"unsloth/Qwen3.6-27B-GGUF",quant:"Q4_K_M",sizeGB:16.82,weightsGB:16.82,params:26.90,active:26.90,kvPer1kMB:estKv(26.90),kvMeasured:false,maxCtx:262144},
- {id:"gemma4-12b",name:"gemma-4:12b-qat",repo:"unsloth/gemma-4-12B-it-qat-GGUF",quant:"Q4_K",sizeGB:6.72,weightsGB:6.72,params:11.91,active:11.91,kvPer1kMB:estKv(11.91),kvMeasured:false,maxCtx:262144},
- {id:"gemma4-e4b",name:"gemma-4:e4b",repo:"ggml-org/gemma-4-E4B-it-GGUF",quant:"Q4_0",sizeGB:4.65,weightsGB:4.65,params:7.52,active:7.52,kvPer1kMB:estKv(7.52),kvMeasured:false,maxCtx:131072},
- {id:"lfm25-26b",name:"lfm2.5:2.6b",repo:"LiquidAI/LFM2.5-2.6B-GGUF",quant:"Q4_K_M",sizeGB:1.67,weightsGB:1.67,params:2.70,active:2.70,kvPer1kMB:estKv(2.70),kvMeasured:false,maxCtx:131072},
- {id:"gemma4-26b",name:"gemma4:26b",repo:"",quant:"Q4_K_M",sizeGB:18,weightsGB:18,params:25.2,active:4,kvPer1kMB:estKv(25.2),kvMeasured:false,maxCtx:262144},
- {id:"llama32-3b",name:"llama3.2:3b",repo:"",quant:"Q4_K_M",sizeGB:2.0,weightsGB:2.0,params:3.2,active:3.2,kvPer1kMB:estKv(3.2),kvMeasured:false,maxCtx:131072}
+ {id:"gemma4-e4b",name:"gemma4:e4b",repo:"ggml-org/gemma-4-E4B-it-GGUF",quant:"Q4_0",sizeGB:4.65,weightsGB:4.65,params:7.52,active:7.52,kvPer1kMB:3,kvMeasured:false,swa:true,maxCtx:131072},
+ {id:"lfm25-26b",name:"lfm2.5:2.6b",repo:"LiquidAI/LFM2.5-2.6B-GGUF",quant:"Q4_K_M",sizeGB:1.67,weightsGB:1.67,params:2.70,active:2.70,kvPer1kMB:estKv(2.70),kvMeasured:false,maxCtx:131072}
 ];
 
 let devices=[],models=[],ctxIdx=3,kvBits=16,sel={m:null,d:null},view="chips";
@@ -409,6 +462,20 @@ function evaluate(m,d,ctx){
     why+=` Context exceeds the model's trained maximum of ${fmtCtx(m.maxCtx)}.`;}
   return{verdict,label,total,w,kv,cap,budget:b,cpuFrac,fastFrac,tok,effBW,overMax,why};
 }
+function caveats(m,d,ctx,r){
+  const out=[];
+  if(!d.bwMeasured) out.push({lvl:"warn",t:`<b>Bandwidth is not measured.</b> ${d.name} uses a vendor figure derated ~20%. Every tok/s here inherits that error, plausibly 20-30%.`});
+  if(!m.kvMeasured) out.push({lvl:"warn",t:`<b>KV cost is extrapolated</b> from parameter count, which assumes every layer keeps a full cache. Measured counter-example: this was 15x too high for a sliding-window model.`});
+  if(m.swa) out.push({lvl:m.kvMeasured?"":"warn",t:`<b>Sliding-window attention.</b> KV is capped rather than growing with context, so memory stays nearly flat as you widen the window.`});
+  if(m.active<m.params) out.push({lvl:"",t:`<b>MoE approximation.</b> Speed uses ${m.active}B active of ${m.params}B total. Router overhead and always-resident layers are not modelled, so real throughput lands somewhat lower.`});
+  out.push({lvl:"",t:`<b>Speed is quoted at an empty context.</b> It drops as the window fills, and on a long prompt time-to-first-token is dominated by prompt processing, not generation.`});
+  if(!d.ppRate) out.push({lvl:"warn",t:`<b>No prompt-processing rate</b> recorded for ${d.name}, so time-to-first-token cannot be computed.`});
+  if(ctx>m.maxCtx) out.push({lvl:"bad",t:`<b>Past the trained context.</b> ${fmtCtx(m.maxCtx)} is this model's maximum; beyond it quality degrades whether or not it fits in memory.`});
+  if(d.kind==="unified") out.push({lvl:"",t:`<b>Budget assumes the default wired limit</b> of ~75% of RAM. Raising <span class="mono">iogpu.wired_limit_mb</span> moves it, at the OS's expense.`});
+  if(d.kind==="discrete") out.push({lvl:"",t:`<b>Spill cost assumes PCIe streaming.</b> The real penalty depends on link width and which layers land on CPU.`});
+  if(r&&r.verdict!=="crit") out.push({lvl:"",t:`<b>Fit is not quality.</b> Bytes predict speed and whether it loads; they say nothing about whether the model is good at your task.`});
+  return out;
+}
 function maxCtxThatFits(m,d){
   const b=budget(d);if(!b.ok)return 0;
   const room=b.fast-m.weightsGB-OVERHEAD;if(room<=0)return 0;
@@ -435,7 +502,8 @@ function renderMatrix(){
       const r=evaluate(m,d,ctx);
       if(r.unknown){h+=`<td><span class="unk">specs needed</span></td>`;continue}
       if(r.verdict==="good"||r.verdict==="warn")fitCount++;
-      const rate=r.tok?`<span class="rate ${r.verdict==="serious"?"dim":""}">${r.tok<1?r.tok.toFixed(2):r.tok.toFixed(r.tok<10?1:0)} tok/s</span>`:"";
+      const est=!d.bwMeasured||!m.kvMeasured;
+      const rate=r.tok?`<span class="rate ${r.verdict==="serious"?"dim":""} ${est?"est":""}"${est?' title="Rests on at least one estimated input - open the inspector for what this assumes"':''}>${r.tok<1?r.tok.toFixed(2):r.tok.toFixed(r.tok<10?1:0)} tok/s</span>`:"";
       h+=`<td><button class="cell" data-m="${m.id}" data-d="${d.id}" title="${r.why.replace(/"/g,"&quot;")}">${chip(r.verdict,r.label)}${rate}</button></td>`;
     }
     h+="</tr>";
@@ -478,7 +546,7 @@ function chartMemory(m,d){
   g+=`<polygon points="${area(p=>0,p=>p.w)}" fill="var(--c-weights)" opacity=".85"/>`;
   g+=`<polygon points="${area(p=>p.w,p=>p.tot)}" fill="var(--c-kv)" opacity=".85" stroke="var(--surface)" stroke-width="2"/>`;
   g+=`<line x1="${P.l}" y1="${y(b.fast)}" x2="${W-P.r}" y2="${y(b.fast)}" stroke="var(--ink-2)" stroke-width="2" stroke-dasharray="5 4"/>`;
-  g+=`<text x="${W-P.r}" y="${y(b.fast)-6}" text-anchor="end" font-size="9.5" fill="var(--ink-2)">${gb(b.fast)} budget</text>`;
+  g+=`<text x="${W-P.r-6}" y="${y(b.fast)-6}" text-anchor="end" font-size="9.5" fill="var(--ink-2)">${gb(b.fast)} budget</text>`;
   CTX_STEPS.forEach((c,i)=>{if(i%2===0||i===CTX_STEPS.length-1)g+=`<text x="${xFor(i)}" y="${H-P.b+15}" text-anchor="middle" font-size="9.5" fill="var(--ink-3)">${fmtCtx(c)}</text>`});
   g+=`<text x="${(P.l+W-P.r)/2}" y="${H-4}" text-anchor="middle" font-size="9.5" fill="var(--ink-3)">context window (tokens)</text>`;
   g+=`<text x="${P.l-8}" y="${P.t-4}" text-anchor="end" font-size="9.5" fill="var(--ink-3)">GB</text>`;
@@ -521,7 +589,8 @@ function renderInspector(){
   if(r.unknown){
     document.getElementById("iVerdict").innerHTML=chip("warn","Specs needed");
     document.getElementById("iWhy").textContent=`${d.name} has no hardware recorded yet. Edit the device to fill in memory and bandwidth.`;
-    ["r-w","r-kv","r-oh","r-tot","r-bud","r-place","r-tok","r-max","r-ttft"].forEach(i=>set(i,"—"));return;
+    ["r-w","r-kv","r-oh","r-tot","r-bud","r-place","r-tok","r-max","r-ttft"].forEach(i=>set(i,"—"));
+    document.getElementById("r-cav").innerHTML=`<li class="warn"><b>No hardware recorded.</b> Nothing can be computed until this device has memory and bandwidth.</li>`;return;
   }
   document.getElementById("iVerdict").innerHTML=chip(r.verdict,r.label);
   document.getElementById("iWhy").textContent=r.why;
@@ -533,6 +602,8 @@ function renderInspector(){
   set("r-max",mc>0?fmtCtx(Math.floor(mc/1024)*1024):"does not fit");
   const ttft=d.ppRate?8192/d.ppRate:0;
   set("r-ttft",r.tok&&ttft?(ttft>90?`${(ttft/60).toFixed(1)} min`:`${ttft.toFixed(0)} s`):"—");
+  document.getElementById("r-cav").innerHTML=
+    caveats(m,d,ctx,r).map(c=>`<li class="${c.lvl}">${c.t}</li>`).join("");
 }
 
 /* ---------- devices & models ---------- */
@@ -560,7 +631,7 @@ function renderDevices(){
 function renderModels(){
   document.getElementById("mods").innerHTML=models.map(m=>
     `<div class="dev"><header><div><h3>${m.name}</h3><span class="kind">${m.active<m.params?`MoE · ${m.active}B of ${m.params}B active`:`dense · ${m.params}B`}</span></div>
-      ${m.kvMeasured?'<span class="tag meas">measured</span>':'<span class="tag">est</span>'}</header>
+      ${m.kvMeasured?'<span class="tag meas">measured</span>':'<span class="tag">est</span>'}${m.swa?'<span class="tag" title="Sliding-window attention caps the KV cache instead of growing it with context">SWA</span>':''}</header>
       <dl><dt>Download</dt><dd>${gb(m.sizeGB)}</dd><dt>Weights</dt><dd>${gb(m.weightsGB)}</dd>
       <dt>KV / 1k tok</dt><dd>${m.kvPer1kMB} MB</dd><dt>Max context</dt><dd>${fmtCtx(m.maxCtx)}</dd>
       <dt>Quant</dt><dd>${m.quant}</dd></dl>${m.repo?`<p class="hint" style="margin-top:8px;word-break:break-all">${m.repo}</p>`:""}

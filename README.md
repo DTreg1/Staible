@@ -1,33 +1,48 @@
 # Staible
 
-A stable of machines, and which local LLMs actually run in it.
+**A stable of machines, and which local LLMs actually run in it.**
 
 Staible answers one question: *given this model and this machine, will it run, and
-will it be usable?* It is built for a heterogeneous home fleet — Apple Silicon
-laptops, a discrete-GPU box, a couple of SBCs — where the generic "VRAM calculator"
-answer is wrong for most of the hardware.
+will it be usable?* It is built for a heterogeneous fleet — Apple Silicon laptops, a
+discrete-GPU box, a couple of SBCs — where the generic "VRAM calculator" answer is
+wrong for most of the hardware.
 
-The published tool is a single self-contained page: a fitment matrix of devices ×
-models, a context-length slider that recomputes every cell, and a per-pair inspector
-with memory and speed curves.
+The tool is a single self-contained HTML file. No build step, no dependencies, no
+server. Open it and it works.
+
+![The fitment matrix](docs/screenshots/matrix.png)
 
 ## Why not just use a VRAM calculator
 
 Every calculator worth using takes hardware specs as *input*, and nearly all of them
 assume one discrete GPU with separate VRAM and system RAM. That assumption produces
-two specific errors on a mixed fleet:
+two specific errors on a mixed fleet.
 
-**Spilling is not one behaviour.** When layers don't fit in fast memory, they land on
+**Spilling is not one behaviour.** When layers don't fit in fast memory they land on
 the CPU. On a discrete GPU that means crossing PCIe, and the penalty is a cliff. On
-Apple Silicon the "CPU" layers read the *same physical RAM*, and the penalty is mild.
-Measured here: forcing a 45% CPU / 55% GPU split on an M3 cost about 10%
-(15.4 → 13.9 tok/s). The same split on a 4090 is catastrophic. Staible models the two
-as separate memory pools blended harmonically, so both fall out of one formula.
+Apple Silicon those layers read the *same physical RAM*, and the penalty is mild —
+measured here, forcing a 45% CPU / 55% GPU split on an M3 cost about 10%
+(15.4 → 13.9 tok/s). Staible models the two as separate pools blended harmonically,
+so one formula produces both the gentle slope and the cliff.
 
 **Download size is the floor, not the total.** The GGUF file is the weights, all of
-which must be resident. On top sit the KV cache — linear in context length, allocated
-up front — and runtime overhead. A 17 GB model on a 16 GB machine was never going to
-run, but neither is a 13 GB one at 128k context.
+which must be resident. On top sit the KV cache — allocated up front — and runtime
+overhead. A 17 GB model on a 16 GB machine was never going to run, but neither is a
+13 GB one at 128k context.
+
+## What it shows
+
+Pick a context length and every cell recomputes. Click any cell to inspect that pair.
+
+![The inspector](docs/screenshots/inspector.png)
+
+The right-hand column ends with **what the calculation assumes** — which inputs were
+measured, which were extrapolated, and where the model is known to be weak. Nothing
+here is presented as more certain than it is.
+
+Devices and models are editable, and the dashed tiles add new ones.
+
+![Devices](docs/screenshots/devices.png)
 
 ## The model
 
@@ -38,83 +53,119 @@ Generation is memory-bandwidth bound: producing a token requires reading every
 tok/s  ≈  effective bandwidth  ÷  active weight bytes
 ```
 
-with three qualifiers that matter in practice:
+where **effective bandwidth** blends the fast and slow pools by the fraction of layers
+in each — `1 / (fastFrac/bwFast + cpuFrac/bwSlow)` — and **active** means active
+parameters, not total. A 30B MoE with 3.3B active occupies memory like a 30B and
+generates like a small dense model.
 
-- **Effective bandwidth** blends the fast and slow pools by the fraction of layers in
-  each: `1 / (fastFrac/bwFast + cpuFrac/bwSlow)`. Unified memory's slow pool is fast;
-  a discrete GPU's is not. This single term produces both the gentle slope and the cliff.
-- **Active** weights, not total. A 30B MoE with 3.3B active occupies memory like a 30B
-  and generates like a small dense model. Size predicts speed only for dense models.
-- **Quantisation is a separate axis.** A 10 GB Q8 of a 9B and a 10 GB Q4 of a 27B are
-  the same bytes and roughly the same speed, and not remotely the same quality. Size
-  predicts speed; it never predicts capability.
-
-Context costs memory linearly and latency worse than that. Measured on an M3: KV cache
-grew ~40 MB per 1k tokens, so 262k context cost 10.5 GB on top of a 5.4 GB model. But
-*declaring* a large context is cheap and *filling* it is not — feeding 9,018 real tokens
-took 60 s of prompt processing before the first output token, while generation barely
-moved. The practical default is 16–32k; 1M on a model card is what it was trained to
-handle, not a setting to use.
+Context costs memory linearly (for most architectures — see below) and latency worse
+than that. Measured on an M3: KV cache grew ~40 MB per 1k tokens for a 9B Qwen, so
+262k context cost 10.5 GB on top of a 5.4 GB model. But *declaring* a large context is
+cheap and *filling* it is not — feeding 9,018 real tokens took 60 s of prompt
+processing before the first output token, while generation barely moved.
 
 ## Measured vs estimated
 
-Every number in the UI is tagged. The distinction is load-bearing, so it is never blurred.
+The distinction is load-bearing, so the UI never blurs it. Every value is tagged.
 
 | Constant | Value | Source |
 |---|---|---|
-| ultron effective bandwidth | 83 GB/s | measured — 5.4 GB weights at 15.4 tok/s |
-| qwen3.5:9b KV cache | 40 MB / 1k tokens | measured — resident size across a num_ctx sweep |
-| ultron prompt processing | 149 tok/s | measured — 9,018-token prompt |
-| every other bandwidth | vendor figure, derated ~20% | estimated |
-| every other KV cost | `40 × (params/8.95)^0.65` | estimated, anchored to the measured point |
+| M3 Air effective bandwidth | 83 GB/s | measured — 5.4 GB weights at 15.4 tok/s |
+| qwen3.5:9b KV cache | 40 MB / 1k tokens | measured — resident size across a `num_ctx` sweep |
+| gemma4:12b-it-qat KV cache | 3.1 MB / 1k tokens | measured |
+| gemma4:12b-it-qat bandwidth | 89.3 GB/s | measured — independent confirmation of the M3 figure |
+| M3 Air prompt processing | 149 tok/s | measured |
+| everything else | vendor figures and extrapolation | estimated |
 
-Re-derive any of them with `scripts/measure-device.sh`.
+### The estimates fail by architecture, and badly
+
+Extrapolating KV cost from parameter count assumes every layer keeps a full cache.
+Sliding-window models cap it instead. `gemma4:12b-it-qat` was **estimated at 48 MB per
+1k tokens and measured at 3.1** — a 15-fold error, with resident size essentially flat
+from 4k to 131k context.
+
+That is the single best argument for `measure-device.sh`. Anything not tagged
+`measured` can be wrong by an order of magnitude, and the tool says so on every
+affected calculation.
 
 ## Layout
 
 ```
-web/index.html              the tool — self-contained, no build step
-scripts/probe-fleet.sh      SSH hardware inventory -> data/fleet.json
-scripts/measure-device.sh   Ollama measurement harness -> bandwidth, KV, prompt rate
-scripts/fetch-hf-catalog.py Hugging Face GGUF specs -> data/hf-catalog.json
-data/                       measured fleet inventory and fetched model catalog
+web/index.html               the tool — open it directly, no build
+scripts/probe-fleet.sh       SSH hardware inventory -> data/fleet.json
+scripts/measure-device.sh    Ollama measurement harness -> bandwidth, KV, prompt rate
+scripts/fetch-hf-catalog.py  Hugging Face GGUF specs -> data/hf-catalog.json
+data/fleet.example.json      example inventory (your own fleet.json is gitignored)
+data/hf-catalog.json         fetched model catalog
 ```
 
 ## Use
 
 ```bash
-# 1. inventory the fleet (unreachable hosts are recorded as unknown, not guessed)
-./scripts/probe-fleet.sh ultron vision optimus r2d2 jetson > data/fleet.json
-
-# 2. measure a machine that has Ollama, to replace estimates with observations
-./scripts/measure-device.sh qwen3.5:9b
-OLLAMA_HOST=http://optimus:11434 ./scripts/measure-device.sh qwen3-coder:30b
-
-# 3. refresh model specs from Hugging Face
-./scripts/fetch-hf-catalog.py --top 20 > data/hf-catalog.json
-
-# 4. open the tool
-open web/index.html
+git clone https://github.com/DTreg1/Staible.git && cd Staible
+open web/index.html          # or xdg-open / just open the file in a browser
 ```
 
-Devices and models are editable in the page and persist to `localStorage`.
-"Reset to my fleet" restores the measured baseline compiled into the page.
+That's enough to try it — the page ships with an example fleet and a real model
+catalog. To point it at your own hardware:
+
+```bash
+# 1. inventory your machines (SSH aliases; unreachable hosts are recorded as
+#    unknown rather than guessed at)
+./scripts/probe-fleet.sh my-laptop my-desktop my-pi > data/fleet.json
+
+# 2. replace estimates with observations on any machine running Ollama
+./scripts/measure-device.sh qwen3.5:9b
+OLLAMA_HOST=http://desktop:11434 ./scripts/measure-device.sh qwen3-coder:30b
+
+# 3. refresh the model catalog from Hugging Face
+./scripts/fetch-hf-catalog.py --top 20 > data/hf-catalog.json
+./scripts/fetch-hf-catalog.py unsloth/Qwen3.5-9B-GGUF
+```
+
+Devices and models edited in the page persist to `localStorage`; **Reset to defaults**
+restores the baseline compiled into the file.
 
 ### Importing a model from Hugging Face
 
-The page is published as a sandboxed artifact and cannot call external hosts, so the
-importer is a deliberate round trip: enter a repo id, press **Open** to load the API
-response in a new tab, paste it back, press **Read specs**. It sums split shards,
-excludes `mmproj` vision projectors, sanity-checks each quant's size against the
-parameter count, and flags MoE repos so you set active parameters yourself — the API
-does not report them.
+`scripts/fetch-hf-catalog.py` reads the HF API directly. Inside the page — which runs
+sandboxed and cannot call external hosts — the importer is a deliberate round trip:
+enter a repo id, press **Open** to load the API response in a new tab, paste it back,
+press **Read specs**.
 
-`scripts/fetch-hf-catalog.py` does the same thing without the round trip when you are
-working locally.
+Either path sums split shards, excludes `mmproj` vision projectors, sanity-checks each
+quantisation's file size against the parameter count, and flags MoE repos so you set
+active parameters yourself — the API does not report them.
 
-## Known gaps
+## Limits
 
-- `sentinel` and `deadpool` did not answer SSH during inventory; they carry no specs.
-- Only qwen3.5:9b has a measured KV cost. Every other model's is estimated.
-- Prompt-processing rates for machines other than ultron are estimates.
-- MoE active-parameter counts come from the model card, not from any API.
+Read these before betting a download on the output. The page carries the same list.
+
+- **Speed is treated as purely bandwidth-bound.** True for single-stream local
+  inference; breaks down for batched serving or where compute is the real ceiling.
+- **One bandwidth number per device.** Real machines vary by access pattern and
+  thermal state. Treat every tok/s as a ceiling, not a promise.
+- **Placement is predicted, not observed.** The runtime decides for real and may keep
+  more or fewer layers resident, especially near the boundary.
+- **Runtime overhead is a flat 0.6 GB allowance** — the least defensible constant here.
+- **Fit is not capability.** A model that fits comfortably may still be worse at your
+  task than one that barely runs. Quantisation trades quality for size in ways no
+  number on this page captures.
+
+## Contributing
+
+Useful contributions, roughly in order of value:
+
+1. **Measured constants for hardware not represented here** — particularly AMD GPUs,
+   Intel Arc, and Apple M-series tiers above base. Run `measure-device.sh` and open a
+   PR adding the device.
+2. **Measured KV costs**, especially for architectures that deviate from the
+   parameter-count curve the way sliding-window models do.
+3. **A better KV estimator.** The current `40 × (params/8.95)^0.65` is a placeholder
+   anchored to one measurement and is known to be wrong across architecture families.
+
+The tool is deliberately one HTML file with no build step. Please keep it that way.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

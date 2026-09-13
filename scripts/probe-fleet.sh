@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Probe each host over SSH and emit a fleet inventory as JSON.
 #
-#   ./scripts/probe-fleet.sh ultron vision optimus r2d2 jetson > data/fleet.json
+#   ./scripts/probe-fleet.sh my-laptop my-desktop my-pi > data/fleet.json
 #
 # Hosts are SSH aliases. The local machine is detected by hostname and probed
 # without SSH. Unreachable hosts are emitted with kind "unknown" rather than

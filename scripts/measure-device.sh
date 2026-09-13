@@ -2,7 +2,7 @@
 # Derive a device's real constants by measuring Ollama, not by reading spec sheets.
 #
 #   ./scripts/measure-device.sh qwen3.5:9b
-#   OLLAMA_HOST=http://optimus:11434 ./scripts/measure-device.sh qwen3-coder:30b
+#   OLLAMA_HOST=http://desktop:11434 ./scripts/measure-device.sh qwen3-coder:30b
 #
 # Produces the three numbers Staible's model needs:
 #   * effective memory bandwidth (GB/s)  -- from tok/s x resident weight bytes
@@ -42,7 +42,7 @@ echo
 echo "context sweep"
 printf '  %-10s %10s %10s %8s\n' num_ctx total_GB vram_GB on_gpu
 SWEEP=""
-for ctx in 4096 16384 65536; do
+for ctx in 4096 8192 16384 32768 65536 131072; do
   stop; sleep 1
   gen "$ctx" "hi" 1 >/dev/null
   read -r total vram <<<"$(resident)"
@@ -75,10 +75,10 @@ print(c/t if t else 0)" <<<"$P")"
 stop
 
 # ---- 4. derive the constants ----------------------------------------------
-python3 - "$TOKS" "$total" "$PPTOK" <<'PY' <<<"$SWEEP"
+python3 - "$TOKS" "$total" "$PPTOK" "$SWEEP" <<'PY'
 import sys
 tok=float(sys.argv[1]); resident=float(sys.argv[2]); pp=float(sys.argv[3])
-rows=[tuple(map(float,l.split())) for l in sys.stdin.read().split("\n") if l.strip()]
+rows=[tuple(map(float,l.split())) for l in sys.argv[4].split("\n") if l.strip()]
 print("\nderived constants")
 kv=None
 if len(rows)>=2:
