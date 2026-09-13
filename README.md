@@ -25,11 +25,18 @@ assume one discrete GPU with separate VRAM and system RAM. That assumption produ
 two specific errors on a mixed fleet.
 
 **Spilling is not one behaviour.** When layers don't fit in fast memory they land on
-the CPU. On a discrete GPU that means crossing PCIe, and the penalty is a cliff. On
-Apple Silicon those layers read the *same physical RAM*, and the penalty is mild —
-measured here, forcing a 45% CPU / 55% GPU split on an M3 cost about 10%
-(15.4 → 13.9 tok/s). Staible models the two as separate pools blended harmonically,
-so one formula produces both the gentle slope and the cliff.
+the CPU. On Apple Silicon those layers read the *same physical RAM*; on a discrete GPU
+the work crosses PCIe. Both cases were measured:
+
+| Machine | Layers on CPU | Speed retained |
+|---|---|---|
+| M3 Air, qwen3.5:9b | 45% | 90% (15.4 → 13.9 tok/s) |
+| RTX 4090, qwen3-coder:30b | 29% | 48% (172.5 → 83.0 tok/s) |
+
+The 4090 loses five times as much speed while displacing *fewer* layers — roughly
+eight times the cost per displaced layer. Staible models the two as separate pools
+blended harmonically, with each slow-pool bandwidth solved from its measurement
+(0.81 and 0.21 of the fast pool), so one formula reproduces both.
 
 **Download size is the floor, not the total.** The GGUF file is the weights, all of
 which must be resident. On top sit the KV cache — allocated up front — and runtime
@@ -99,6 +106,10 @@ The distinction is load-bearing, so the UI never blurs it. Every value is tagged
 | gemma4:12b-it-qat KV cache | 3.1 MB / 1k tokens | measured |
 | gemma4:12b-it-qat bandwidth | 89.3 GB/s | measured — independent confirmation of the M3 figure |
 | M3 Air prompt processing | 149 tok/s | measured |
+| qwen3-coder:30b KV cache | 105.6 MB / 1k tokens | measured on the 4090 |
+| RTX 4090 prompt processing | 10,201 tok/s | measured |
+| unified spill penalty | slow pool = 0.81 × fast | solved from the M3 measurement |
+| discrete spill penalty | slow pool = 0.21 × fast | solved from the 4090 measurement |
 | everything else | vendor figures and extrapolation | estimated |
 
 ### The estimates fail by architecture, and badly
@@ -173,6 +184,9 @@ Read these before betting a download on the output. The page carries the same li
   thermal state. Treat every tok/s as a ceiling, not a promise.
 - **Placement is predicted, not observed.** The runtime decides for real and may keep
   more or fewer layers resident, especially near the boundary.
+- **The two spill constants each rest on a single measurement**, one machine apiece.
+  The gap between them is large and reproducible; the precise values are the least
+  certain numbers in the tool.
 - **Runtime overhead is a flat 0.6 GB allowance** — the least defensible constant here.
 - **Fit is not capability.** A model that fits comfortably may still be worse at your
   task than one that barely runs. Quantisation trades quality for size in ways no

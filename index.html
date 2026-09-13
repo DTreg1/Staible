@@ -330,6 +330,10 @@ svg text{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums
         <p>Generation is treated as purely memory-bandwidth bound, because reading every active weight
         dominates. That holds for single-stream local inference on the hardware here. It breaks down for
         batched serving, for very small models on fast memory, and anywhere compute is the real ceiling.</p></div>
+      <div class="card"><h3>The spill penalty comes from two measurements</h3>
+        <p>Unified and discrete slow-pool bandwidths (0.81 and 0.21 of the fast pool) were each
+        solved from exactly one measured spill — an M3 Air and an RTX 4090. The gap between them
+        is large and reproducible; the precise values are the least certain numbers here.</p></div>
       <div class="card"><h3>One number for a whole memory pool</h3>
         <p>Each device gets a single effective bandwidth. Real machines vary by access pattern, thermal
         state, and what else is resident. Treat every tok/s as a ceiling you approach, not a promise.</p></div>
@@ -394,7 +398,7 @@ const gb=n=>n.toFixed(n<10?2:1)+" GB";
 const DEFAULT_DEVICES=[
  {id:"m3-air",name:"m3-air",desc:"MacBook Air · Apple M3 · 16 GB",kind:"unified",ramGB:16,vramGB:0,bwGB:83,bwMeasured:true,wiredFrac:.75,ppRate:149,note:"Bandwidth and prompt rate measured"},
  {id:"m4-air",name:"m4-air",desc:"MacBook Air · Apple M4 · 16 GB",kind:"unified",ramGB:16,vramGB:0,bwGB:100,bwMeasured:false,wiredFrac:.75,ppRate:180,note:"Vendor figure derated ~20%"},
- {id:"rtx4090",name:"rtx-4090",desc:"Desktop · RTX 4090 24 GB · 32 GB RAM",kind:"discrete",ramGB:32,vramGB:24,bwGB:800,bwMeasured:false,bwCpuGB:55,ppRate:3000,note:"Vendor figure derated ~20%"},
+ {id:"rtx4090",name:"rtx-4090",desc:"Desktop · RTX 4090 24 GB · 32 GB RAM",kind:"discrete",ramGB:32,vramGB:24,bwGB:800,bwMeasured:false,ppRate:10201,note:"Prompt rate measured; bandwidth still a derated vendor figure"},
  {id:"ryzen-mini",name:"ryzen-mini",desc:"Mini PC · Ryzen embedded · 8 GB · no dGPU",kind:"cpu",ramGB:8,vramGB:0,bwGB:25,bwMeasured:false,osReserveGB:2,ppRate:25,note:"CPU only"},
  {id:"jetson-nano",name:"jetson-nano",desc:"Jetson Nano · Tegra X1 · 4 GB",kind:"cpu",ramGB:4,vramGB:0,bwGB:20,bwMeasured:false,osReserveGB:1.5,ppRate:12,note:"Below the floor for useful LLM inference"},
  {id:"unconfigured",name:"your-box",desc:"Not probed yet — edit to add specs",kind:"unknown",ramGB:0,vramGB:0,bwGB:0,bwMeasured:false,note:"Placeholder"}
@@ -409,8 +413,8 @@ const DEFAULT_MODELS=[
  {id:"qwen35-9b",name:"qwen3.5:9b",repo:"unsloth/Qwen3.5-9B-GGUF",quant:"Q4_K_M",sizeGB:5.68,weightsGB:5.4,params:8.95,active:8.95,kvPer1kMB:40,kvMeasured:true,maxCtx:262144},
  {id:"gemma4-12b-qat",name:"gemma4:12b-it-qat",repo:"unsloth/gemma-4-12B-it-qat-GGUF",quant:"Q4_K",sizeGB:7.2,weightsGB:7.63,params:11.91,active:11.91,kvPer1kMB:3.1,kvMeasured:true,swa:true,maxCtx:262144},
  {id:"qwen38-27b",name:"qwen3.8:27b",repo:"unsloth/Qwen3.8-27B-GGUF",quant:"Q4_K_M",sizeGB:16.46,weightsGB:16.46,params:27.32,active:27.32,kvPer1kMB:estKv(27.32),kvMeasured:false,maxCtx:262144},
- {id:"qwen3coder-30b",name:"qwen3-coder:30b",repo:"unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",quant:"Q4_K_M",sizeGB:18.56,weightsGB:18.56,params:30.53,active:3.3,kvPer1kMB:estKv(30.53),kvMeasured:false,maxCtx:262144},
- {id:"qwen36-35b",name:"qwen3.6:35b-a3b",repo:"unsloth/Qwen3.6-35B-A3B-GGUF",quant:"Q4_K_M",sizeGB:22.13,weightsGB:22.13,params:34.66,active:3.3,kvPer1kMB:estKv(34.66),kvMeasured:false,maxCtx:262144},
+ {id:"qwen3coder-30b",name:"qwen3-coder:30b",repo:"unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",quant:"Q4_K_M",sizeGB:18.56,weightsGB:18.56,params:30.53,active:3.3,kvPer1kMB:105.6,kvMeasured:true,maxCtx:262144},
+ {id:"qwen36-35b",name:"qwen3.6:35b-a3b",repo:"unsloth/Qwen3.6-35B-A3B-GGUF",quant:"Q4_K_M",sizeGB:22.13,weightsGB:22.13,params:34.66,active:3.3,kvPer1kMB:3.0,kvMeasured:true,swa:true,maxCtx:262144},
  {id:"qwen36-27b",name:"qwen3.6:27b",repo:"unsloth/Qwen3.6-27B-GGUF",quant:"Q4_K_M",sizeGB:16.82,weightsGB:16.82,params:26.90,active:26.90,kvPer1kMB:estKv(26.90),kvMeasured:false,maxCtx:262144},
  {id:"gemma4-e4b",name:"gemma4:e4b",repo:"ggml-org/gemma-4-E4B-it-GGUF",quant:"Q4_0",sizeGB:4.65,weightsGB:4.65,params:7.52,active:7.52,kvPer1kMB:3,kvMeasured:false,swa:true,maxCtx:131072},
  {id:"lfm25-26b",name:"lfm2.5:2.6b",repo:"LiquidAI/LFM2.5-2.6B-GGUF",quant:"Q4_K_M",sizeGB:1.67,weightsGB:1.67,params:2.70,active:2.70,kvPer1kMB:estKv(2.70),kvMeasured:false,maxCtx:131072}
@@ -427,11 +431,18 @@ function load(){
 function save(){try{localStorage.setItem(LS,JSON.stringify({devices,models}))}catch(e){}}
 
 /* ---------- the engine ---------- */
+/* Slow-pool bandwidth as a fraction of the fast pool, solved from measurement:
+     unified  M3 Air,   45% of layers on CPU, retained 90.3% of speed -> 0.81
+     discrete RTX 4090, 29% of layers on CPU, retained 48.1%          -> 0.21
+   One machine each. The gap between them is this tool's whole premise and is
+   large; the exact values are the least certain numbers in it. */
+const SLOW_FRAC={unified:.81,discrete:.21};
 function budget(d){
   if(d.kind==="unified"){const fast=d.ramGB*(d.wiredFrac??.75);
-    return{fast,slow:Math.max(0,d.ramGB-fast-1),bwFast:d.bwGB,bwSlow:d.bwGB*.85,ok:d.ramGB>0};}
+    return{fast,slow:Math.max(0,d.ramGB-fast-1),bwFast:d.bwGB,bwSlow:d.bwGB*SLOW_FRAC.unified,ok:d.ramGB>0};}
   if(d.kind==="discrete")
-    return{fast:Math.max(0,d.vramGB-.8),slow:Math.max(0,d.ramGB-2),bwFast:d.bwGB,bwSlow:d.bwCpuGB??55,ok:d.vramGB>0};
+    return{fast:Math.max(0,d.vramGB-.8),slow:Math.max(0,d.ramGB-2),bwFast:d.bwGB,
+           bwSlow:d.bwCpuGB??d.bwGB*SLOW_FRAC.discrete,ok:d.vramGB>0};
   if(d.kind==="cpu"){const fast=Math.max(0,d.ramGB-(d.osReserveGB??2));
     return{fast,slow:0,bwFast:d.bwGB,bwSlow:d.bwGB,ok:d.ramGB>0};}
   return{fast:0,slow:0,bwFast:0,bwSlow:0,ok:false};
@@ -455,8 +466,8 @@ function evaluate(m,d,ctx){
   if(cpuFrac>0.001){
     verdict="serious";label="Spills to CPU";
     why=d.kind==="unified"
-      ? `${Math.round(cpuFrac*100)}% of layers land on CPU cores. On unified memory that's the same physical RAM, so the penalty is mild.`
-      : `${Math.round(cpuFrac*100)}% of layers fall outside VRAM. Every token crosses PCIe — this is the cliff, not a slope.`;
+      ? `${Math.round(cpuFrac*100)}% of layers land on CPU cores. On unified memory that's the same physical RAM: measured on an M3, 45% displaced cost only 10% of speed.`
+      : `${Math.round(cpuFrac*100)}% of layers fall outside VRAM. Measured on a 4090: 29% displaced cost 52% of generation speed, about 8x worse per layer than the same spill on unified memory.`;
   }else if(total>b.fast*.92){
     verdict="warn";label="Tight";
     why=`Uses ${Math.round(total/b.fast*100)}% of the fast-memory budget. Fits, but leaves no room to widen context.`;
@@ -478,7 +489,7 @@ function caveats(m,d,ctx,r){
   if(!d.ppRate) out.push({lvl:"warn",t:`<b>No prompt-processing rate</b> recorded for ${d.name}, so time-to-first-token cannot be computed.`});
   if(ctx>m.maxCtx) out.push({lvl:"bad",t:`<b>Past the trained context.</b> ${fmtCtx(m.maxCtx)} is this model's maximum; beyond it quality degrades whether or not it fits in memory.`});
   if(d.kind==="unified") out.push({lvl:"",t:`<b>Budget assumes the default wired limit</b> of ~75% of RAM. Raising <span class="mono">iogpu.wired_limit_mb</span> moves it, at the OS's expense.`});
-  if(d.kind==="discrete") out.push({lvl:"",t:`<b>Spill cost assumes PCIe streaming.</b> The real penalty depends on link width and which layers land on CPU.`});
+  if(d.kind==="discrete") out.push({lvl:"",t:`<b>Spill cost rests on one measurement.</b> A 4090 losing 52% of its speed at 29% displaced is the only discrete data point; link width and which layers move will shift it.`});
   if(r&&r.verdict!=="crit") out.push({lvl:"",t:`<b>Fit is not quality.</b> Bytes predict speed and whether it loads; they say nothing about whether the model is good at your task.`});
   return out;
 }
