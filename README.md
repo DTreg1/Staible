@@ -12,7 +12,7 @@ wrong for most of the hardware.
 The tool is a single self-contained HTML file. No build step, no dependencies, no
 server, no telemetry. Open it and it works.
 
-![The fitment matrix](docs/screenshots/matrix.png)
+![Fitment matrix: five machines as rows against eight models as columns, each cell showing Fits, Tight, Spills to CPU or Won't run together with an estimated tokens-per-second figure](docs/screenshots/matrix.png)
 
 ## Why not just use a VRAM calculator
 
@@ -36,7 +36,7 @@ overhead. A 17 GB model on a 16 GB machine was never going to run, but neither i
 
 Pick a context length and every cell recomputes. Click any cell to inspect that pair.
 
-![The inspector](docs/screenshots/inspector.png)
+![Inspector for qwen3.5:9b on an M3 Air: a stacked area chart of model weights and KV cache against context length crossing the 12 GB budget line, a generation-speed chart beside it, and a readout ending in a list of what the calculation assumes](docs/screenshots/inspector.png)
 
 The right-hand column ends with **what the calculation assumes** — which inputs were
 measured, which were extrapolated, and where the model is known to be weak. Nothing
@@ -44,14 +44,14 @@ here is presented as more certain than it is.
 
 Devices and models are editable, and the dashed tiles add new ones.
 
-![Devices](docs/screenshots/devices.png)
+![Device cards for an M3 Air, M4 Air, RTX 4090 desktop, Ryzen mini PC and Jetson Nano, each showing memory, fast budget and bandwidth, tagged measured or est, followed by a dashed Add a device tile](docs/screenshots/devices.png)
 
 ### Adding hardware
 
 You should not have to know your machine's memory bandwidth in GB/s. Pick the chip or
 GPU and Staible fills in the architecture, VRAM and bandwidth from the published spec.
 
-![Adding a device from a preset](docs/screenshots/add-device.png)
+![The Add device dialog with RTX 4090 chosen from the hardware preset list, which has filled in discrete GPU architecture, 24 GB VRAM, 827 GB/s effective bandwidth and a prompt-processing rate, above a note reading 1008 GB/s published, derated to 827 GB/s effective](docs/screenshots/add-device.png)
 
 Presets cover Apple Silicon M1–M4 (base through Ultra — the tier matters enormously,
 spanning roughly 68 to 800 GB/s), GeForce RTX 30/40/50, NVIDIA datacentre parts,
