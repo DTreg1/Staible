@@ -189,6 +189,31 @@ Useful contributions, roughly in order of value:
 
 The tool is deliberately one HTML file with no build step. Please keep it that way.
 
+## Sources and acknowledgements
+
+Staible is an independent project. It is **not affiliated with, endorsed by, or
+sponsored by** any of the organisations below. All trademarks belong to their owners
+and are used here only to identify the hardware and software the tool reasons about.
+
+- **[Hugging Face](https://huggingface.co)** — model metadata (parameter counts, trained
+  context, per-quantisation file sizes) is read from their public API. Please be
+  considerate with request volume; `fetch-hf-catalog.py` honours an optional `HF_TOKEN`
+  environment variable if you have one and need higher rate limits.
+- **GGUF publishers** whose repositories make up the default catalogue —
+  [unsloth](https://huggingface.co/unsloth), [ggml-org](https://huggingface.co/ggml-org),
+  and [LiquidAI](https://huggingface.co/LiquidAI) — and the model authors behind them,
+  including Alibaba (Qwen), Google (Gemma) and Liquid AI.
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** — the GGUF format, and the
+  layer-offloading behaviour this tool models.
+- **[Ollama](https://ollama.com)** — `measure-device.sh` drives its local API to take
+  measurements.
+- **Apple, NVIDIA, AMD and Intel** — the hardware presets use each vendor's published
+  memory-bandwidth figures, derated. Those numbers are the vendors’; any error in
+  applying them is this project’s.
+- **[IBM Plex](https://github.com/IBM/plex)** by IBM, licensed under the
+  [SIL Open Font License 1.1](https://openfontlicense.org), served via Google Fonts.
+
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). This covers Staible’s own code and documentation. Model
+weights, vendor specifications and the typeface carry their own separate licences.

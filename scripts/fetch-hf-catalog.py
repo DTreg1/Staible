@@ -15,10 +15,13 @@ Two traps this handles that a naive fetcher walks straight into:
 and then sanity-checks each quant's size against its parameter count, because a
 match on the wrong file yields a confidently wrong number.
 """
-import argparse, json, re, sys, urllib.request
+import argparse, json, os, re, sys, urllib.request
 
 API = "https://huggingface.co/api/models"
 UA = {"User-Agent": "staible/1.0"}
+# Anonymous reads are fine for normal use; a token only raises the rate limit.
+if os.environ.get("HF_TOKEN"):
+    UA["Authorization"] = "Bearer " + os.environ["HF_TOKEN"]
 
 # Bits per weight for each quantisation, used only to sanity-check file sizes.
 BPW = {"Q4_K_M": 4.85, "Q4_K_S": 4.6, "Q4_K": 4.85, "Q4_0": 4.55, "MXFP4": 4.25,
