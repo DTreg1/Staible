@@ -115,6 +115,8 @@ index.html                   the tool — open it directly, no build
 scripts/probe-fleet.sh       SSH hardware inventory -> data/fleet.json
 scripts/measure-device.sh    Ollama measurement harness -> bandwidth, KV, prompt rate
 scripts/fetch-hf-catalog.py  Hugging Face GGUF specs -> data/hf-catalog.json
+scripts/check-selfcontained.py  CI guard: the page must stay dependency-free
+test/run.mjs                 the test suite (node test/run.mjs)
 data/fleet.example.json      example inventory (your own fleet.json is gitignored)
 data/hf-catalog.json         fetched model catalog
 ```
@@ -187,7 +189,40 @@ Useful contributions, roughly in order of value:
 4. **A better KV estimator.** The current `40 × (params/8.95)^0.65` is a placeholder
    anchored to one measurement and is known to be wrong across architecture families.
 
-The tool is deliberately one HTML file with no build step. Please keep it that way.
+The tool is deliberately one HTML file with no build step, and the test suite has no
+dependencies. Please keep both that way — CI enforces the first.
+
+Run `node test/run.mjs` before opening a PR.
+
+## Tests
+
+```bash
+node test/run.mjs
+```
+
+No dependencies and no install step — the suite loads `index.html`'s script into a
+stubbed DOM and exercises the engine directly, so the single-file design stays intact.
+40 assertions covering:
+
+- **`budget`** — that architecture, not capacity, decides the memory model
+- **The central claim** — that a spill costs little on unified memory and collapses
+  across PCIe. If those two ever converge, the tool has lost its reason to exist, and
+  three tests fail
+- **MoE** — memory tracks total parameters, speed tracks active
+- **`parseHF`** — split shards summed, `mmproj` projectors excluded, implausible file
+  sizes rejected. Each of these is a real bug caught during development, pinned
+- **Presets** — the M3 preset must keep reproducing the machine it was derived from
+  (83 GB/s, 149 prompt tok/s). It is the only check on the 0.82 derate factor
+- **Shipped defaults** — that the catalogue the docs describe still behaves as described
+
+The suite is mutation-tested: drifting the derate factor, treating a discrete spill like
+a unified one, dropping the `mmproj` filter, overwriting shards instead of summing them,
+using total parameters for MoE speed, and removing the wired-limit reserve are each
+caught by at least one assertion.
+
+CI runs the suite plus a lint pass on every push and pull request — shell scripts parse,
+Python compiles, the page's script parses, shipped JSON is valid, README images exist,
+and `index.html` has not quietly acquired an external dependency.
 
 ## Sources and acknowledgements
 

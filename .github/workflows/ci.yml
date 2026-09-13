@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Engine tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # No install step: the suite has no dependencies, by design.
+      - name: Run tests
+        run: node test/run.mjs
+
+  lint:
+    name: Scripts and page
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Shell scripts parse
+        run: |
+          for f in scripts/*.sh; do
+            bash -n "$f" && echo "ok  $f"
+          done
+
+      - name: Python compiles
+        run: |
+          python -m py_compile scripts/*.py && echo "ok  scripts/*.py"
+
+      - name: Python help text works
+        run: |
+          python scripts/fetch-hf-catalog.py --help > /dev/null && echo "ok  --help"
+
+      - name: Page script parses
+        run: |
+          node -e '
+            const fs = require("fs");
+            const html = fs.readFileSync("index.html", "utf8");
+            const s = html.indexOf("<script>"), e = html.lastIndexOf("</script>");
+            if (s < 0 || e < 0) { console.error("no script block"); process.exit(1); }
+            new (require("vm").Script)(html.slice(s + 8, e), { filename: "index.html" });
+            console.log("ok  index.html script parses");
+          '
+
+      - name: Single-file rule holds
+        run: python scripts/check-selfcontained.py index.html
+
+      - name: Shipped JSON is valid
+        run: |
+          for f in data/*.json; do
+            python -c 'import json,sys; json.load(open(sys.argv[1]))' "$f" && echo "ok  $f"
+          done
+
+      - name: README images exist
+        run: |
+          miss=0
+          for f in $(grep -oE '\(docs/[a-zA-Z0-9/_-]+\.png\)' README.md | tr -d '()'); do
+            [ -f "$f" ] && echo "ok  $f" || { echo "MISSING $f"; miss=1; }
+          done
+          exit $miss
