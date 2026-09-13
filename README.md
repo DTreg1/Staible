@@ -46,6 +46,24 @@ Devices and models are editable, and the dashed tiles add new ones.
 
 ![Devices](docs/screenshots/devices.png)
 
+### Adding hardware
+
+You should not have to know your machine's memory bandwidth in GB/s. Pick the chip or
+GPU and Staible fills in the architecture, VRAM and bandwidth from the published spec.
+
+![Adding a device from a preset](docs/screenshots/add-device.png)
+
+Presets cover Apple Silicon M1–M4 (base through Ultra — the tier matters enormously,
+spanning roughly 68 to 800 GB/s), GeForce RTX 30/40/50, NVIDIA datacentre parts,
+Radeon RX, Intel Arc, and common DDR4/DDR5 channel configurations. Anything not listed
+can still be entered by hand.
+
+Published peak bandwidth is derated by 0.82 to an effective figure. That factor is
+anchored to the only measurement available — an M3 with a 100 GB/s published figure
+sustained 83 GB/s — and it holds up: the M3 preset derives 82 GB/s and 148 prompt tok/s
+against 83 and 149 measured. One data point is not a validation set, so presets are
+always flagged `est` and a measured value should replace them.
+
 ## The model
 
 Generation is memory-bandwidth bound: producing a token requires reading every
@@ -158,12 +176,15 @@ Read these before betting a download on the output. The page carries the same li
 
 Useful contributions, roughly in order of value:
 
-1. **Measured constants for hardware not represented here** — particularly AMD GPUs,
-   Intel Arc, and Apple M-series tiers above base. Run `measure-device.sh` and open a
-   PR adding the device.
-2. **Measured KV costs**, especially for architectures that deviate from the
+1. **Measured constants for hardware in the preset list.** Every preset is a derated
+   spec sheet; only the M3 has been checked against reality. Run `measure-device.sh`
+   and open a PR replacing the estimate — that is the single most valuable thing you
+   can contribute, and it directly tests whether the 0.82 derate generalises.
+2. **Presets for hardware not listed** — the catalogue is a plain object near the top
+   of the script in `index.html`. Add a row, cite the published bandwidth.
+3. **Measured KV costs**, especially for architectures that deviate from the
    parameter-count curve the way sliding-window models do.
-3. **A better KV estimator.** The current `40 × (params/8.95)^0.65` is a placeholder
+4. **A better KV estimator.** The current `40 × (params/8.95)^0.65` is a placeholder
    anchored to one measurement and is known to be wrong across architecture families.
 
 The tool is deliberately one HTML file with no build step. Please keep it that way.
